@@ -52,8 +52,8 @@ class _UserPanelShellState extends State<UserPanelShell> {
     final subscription=results[0],profile=results[1];
     if(!mounted)return;
     setState((){
-      if(subscription is Map){final data=subscription['data'];_subscriptionExpired=data==null||(data is Map&&data['isExpired']==true);}
-      if(profile is Map){final data=profile['data'];final status=data is Map?data['approvalStatus']?.toString()??'Approved':'Approved';_approvalRestricted=status.toLowerCase()!='approved';}
+      if(subscription!=null){final data=subscription['data'];_subscriptionExpired=data==null||(data is Map&&data['isExpired']==true);}
+      if(profile!=null){final data=profile['data'];final status=data is Map?data['approvalStatus']?.toString()??'Approved':'Approved';_approvalRestricted=status.toLowerCase()!='approved';}
     });
   }
 
