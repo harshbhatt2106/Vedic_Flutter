@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../app/theme/app_theme.dart';
-import '../../../../core/api/api_client.dart';
-import '../../../auth/data/models/auth_models.dart';
+import '../../../../../app/theme/app_theme.dart';
+import '../../../../../core/api/api_client.dart';
+import '../../../../auth/data/models/auth_models.dart';
 import '../dashboard/admin_dashboard_screen.dart';
 
 class AdminShellScreen extends StatefulWidget {
