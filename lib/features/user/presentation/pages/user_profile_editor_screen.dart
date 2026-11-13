@@ -8,6 +8,7 @@ class UserProfileEditorScreen extends StatefulWidget{
 }
 class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
   bool loading=true,busy=false;String? error,notice;Map<String,dynamic> profile={};
+  final Map<String,List<Map<String,dynamic>>> options={};
   final Map<String,TextEditingController> fields={};
   static const keys=[
     'firstName','lastName','dateOfBirth','gender','timeOfBirth','birthPlace','birthCountryId','birthStateId','birthCityId','disabilityStatus','disabilityDetails','heightFeet','heightInches','weight',
@@ -57,12 +58,61 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
       SizedBox(width:double.infinity,child:FilledButton(onPressed:busy?null:()=>run(() async { await widget.apiClient.post('/user-profile/submit-for-review',body:{},authenticated:true); }),child:const Text('Submit profile for review'))),
     ]))),
   ]));}
-  Widget field(String label,String key,{bool numeric=false,int lines=1})=>Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:fields[key],keyboardType:numeric?const TextInputType.numberWithOptions(decimal:true):TextInputType.text,maxLines:lines,decoration:InputDecoration(labelText:label,filled:true)));
+  Widget field(String label,String key,{bool numeric=false,int lines=1}) {
+    const ids={'religionId','casteId','subCasteId','motherTongueId','qualificationId','educationFieldId','courseId','occupationId','professionId','countryId','stateId','cityId','birthCountryId','birthStateId','birthCityId'};
+    if(ids.contains(key))return selectField(label,key);
+    return Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:fields[key],keyboardType:numeric?const TextInputType.numberWithOptions(decimal:true):TextInputType.text,maxLines:lines,decoration:InputDecoration(labelText:label,filled:true)));
+  }
+  Widget selectField(String label,String key){
+    final current=integer(key);final list=options[key]??const <Map<String,dynamic>>[];
+    final value=list.any((x)=>(x['id'] as num?)?.toInt()==current)?current:null;
+    return Padding(padding:const EdgeInsets.only(bottom:8),child:DropdownButtonFormField<int>(
+      initialValue:value,isExpanded:true,decoration:InputDecoration(labelText:label,filled:true),
+      items:list.map((x)=>DropdownMenuItem<int>(value:(x['id'] as num).toInt(),child:Text(x['name'].toString(),overflow:TextOverflow.ellipsis))).toList(),
+      onChanged:(v)=>changeOption(key,v),
+    ));
+  }
+  Future<void> fetchOptions(String key,String path)async{
+    try{final r=await widget.apiClient.get(path,authenticated:true);final d=r['data'];options[key]=d is List?d.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];}catch(_){options[key]=[];}
+  }
+  Future<void> changeOption(String key,int? value)async{
+    fields[key]!.text=value?.toString()??'';
+    final dependencies=<String,Map<String,String>>{
+      'religionId':{'casteId':'/reference-data/castes?religionId=$value'},
+      'casteId':{'subCasteId':'/reference-data/sub-castes?casteId=$value'},
+      'educationFieldId':{'courseId':'/reference-data/courses?educationFieldId=$value'},
+      'occupationId':{'professionId':'/reference-data/professions?occupationId=$value'},
+      'countryId':{'stateId':'/locations/states?countryId=$value'},
+      'stateId':{'cityId':'/locations/cities?stateId=$value'},
+      'birthCountryId':{'birthStateId':'/locations/states?countryId=$value'},
+      'birthStateId':{'birthCityId':'/locations/cities?stateId=$value'},
+    };
+    for(final child in dependencies[key]?.keys??const <String>[])fields[child]!.clear();
+    for(final entry in dependencies[key]?.entries??const <MapEntry<String,String>>[]){await fetchOptions(entry.key,entry.value);}
+    if(mounted)setState((){});
+  }
   Widget section(String title,List<Widget> children,Future<void> Function() save)=>Card(color:AppPalette.surface,elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(14),side:const BorderSide(color:AppPalette.border)),child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
     Text(title,style:const TextStyle(fontSize:16,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),const SizedBox(height:10),...children,
     SizedBox(width:double.infinity,child:OutlinedButton(onPressed:busy?null:()=>run(save),child:Text('Save $title'))),
   ])));
-  Future<void> load()async{setState(()=>{loading=true,error=null});try{final r=await widget.apiClient.get('/user-profile',authenticated:true);final d=r['data'];if(d is Map){profile=Map<String,dynamic>.from(d);for(final k in keys){fields[k]!.text=profile[k]?.toString()??'';}if(fields['dateOfBirth']!.text.startsWith('0001-'))fields['dateOfBirth']!.clear();}}catch(e){error=e.toString();}finally{if(mounted)setState(()=>loading=false);}}
+  Future<void> load()async{setState(()=>{loading=true,error=null});try{final r=await widget.apiClient.get('/user-profile',authenticated:true);final d=r['data'];if(d is Map){profile=Map<String,dynamic>.from(d);for(final k in keys){fields[k]!.text=profile[k]?.toString()??'';}if(fields['dateOfBirth']!.text.startsWith('0001-'))fields['dateOfBirth']!.clear();await loadMasterData();}}catch(e){error=e.toString();}finally{if(mounted)setState(()=>loading=false);}}
+  Future<void> loadMasterData()async{
+    final base=<String,String>{
+      'religionId':'/reference-data/religions','motherTongueId':'/reference-data/mother-tongues',
+      'qualificationId':'/reference-data/qualifications','educationFieldId':'/reference-data/education-fields',
+      'occupationId':'/reference-data/occupations','countryId':'/locations/countries','birthCountryId':'/locations/countries',
+    };
+    for(final e in base.entries){await fetchOptions(e.key,e.value);}
+    final religion=integer('religionId'),caste=integer('casteId'),education=integer('educationFieldId'),occupation=integer('occupationId'),country=integer('countryId'),state=integer('stateId'),birthCountry=integer('birthCountryId'),birthState=integer('birthStateId');
+    if(religion!=null)await fetchOptions('casteId','/reference-data/castes?religionId=$religion');
+    if(caste!=null)await fetchOptions('subCasteId','/reference-data/sub-castes?casteId=$caste');
+    if(education!=null)await fetchOptions('courseId','/reference-data/courses?educationFieldId=$education');
+    if(occupation!=null)await fetchOptions('professionId','/reference-data/professions?occupationId=$occupation');
+    if(country!=null)await fetchOptions('stateId','/locations/states?countryId=$country');
+    if(state!=null)await fetchOptions('cityId','/locations/cities?stateId=$state');
+    if(birthCountry!=null)await fetchOptions('birthStateId','/locations/states?countryId=$birthCountry');
+    if(birthState!=null)await fetchOptions('birthCityId','/locations/cities?stateId=$birthState');
+  }
   Future<void> run(Future<void> Function() fn)async{setState(()=>{busy=true,error=null,notice=null});try{await fn();if(mounted)setState(()=>notice='Changes saved successfully.');await load();}catch(e){if(mounted)setState(()=>error=e.toString());}finally{if(mounted)setState(()=>busy=false);}}
   Future<void> savePersonal()async{
     if(str('firstName')==null||str('dateOfBirth')==null||str('gender')==null)throw Exception('First name, date of birth and gender are required.');
