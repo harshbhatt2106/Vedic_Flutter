@@ -6,9 +6,10 @@ import '../../../../core/api/api_client.dart';
 enum UserToolKind { notifications, shortlist, blocked, reports }
 
 class UserToolsScreen extends StatefulWidget {
-  const UserToolsScreen({super.key, required this.apiClient, required this.kind});
+  const UserToolsScreen({super.key, required this.apiClient, required this.kind, required this.onOpenMenu});
   final ApiClient apiClient;
   final UserToolKind kind;
+  final VoidCallback onOpenMenu;
 
   @override
   State<UserToolsScreen> createState() => _UserToolsScreenState();
@@ -168,6 +169,7 @@ class _UserToolsScreenState extends State<UserToolsScreen> {
     return Scaffold(
       backgroundColor: AppPalette.background,
       appBar: AppBar(
+        leading: IconButton(tooltip: 'Open navigation menu', onPressed: widget.onOpenMenu, icon: const Icon(Icons.menu_rounded, color: AppPalette.maroon)),
         backgroundColor: AppPalette.background,
         title: Text(_title, style: const TextStyle(color: AppPalette.darkMaroon)),
         actions: [
