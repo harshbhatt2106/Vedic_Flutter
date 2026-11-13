@@ -227,6 +227,19 @@ class ApiClient {
     catch (_) { throw const ApiException(message: 'Unable to connect to VedicVivah. Check your internet connection and API address.'); }
   }
 
+  Future<String?> getValidAccessToken() async {
+    final session=_sessionStore.current;
+    if(session==null)return null;
+    final now=DateTime.now().toUtc();
+    if(!session.expiresAtUtc.isAfter(now.add(const Duration(seconds:30)))){
+      final refreshed=await _refreshSession();
+      if(!refreshed){
+        if(!session.expiresAtUtc.isAfter(now)){await _sessionStore.clear();return null;}
+      }
+    }
+    return _sessionStore.current?.accessToken;
+  }
+
   Future<bool> _refreshSession() {
     final active = _refreshInFlight;
     if (active != null) return active;
