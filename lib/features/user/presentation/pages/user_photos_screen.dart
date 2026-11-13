@@ -24,11 +24,9 @@ class _UserPhotosScreenState extends State<UserPhotosScreen>{
     final ext=file.name.split('.').last.toLowerCase();
     if(!['jpg','jpeg','png','webp'].contains(ext)){setState(()=>error='Choose a JPG, PNG or WEBP image.');return;}
     setState(()=>busy=true);
-    try{await widget.apiClient.postMultipart('/user-profile/photos',fields:{},authenticated:true);}
-    catch(_){
-      try{await widget.apiClient.putMultipartFile('/user-profile/photos',bytes:bytes,filename:file.name,fieldName:'photo',authenticated:true);}
-      catch(e){if(mounted)setState(()=>error=e.toString());return;}
-    } finally {if(mounted)setState(()=>busy=false);}
+    try{await widget.apiClient.postMultipartFile('/user-profile/photos',bytes:bytes,filename:file.name,fieldName:'photo',authenticated:true);}
+    catch(e){if(mounted)setState(()=>error=e.toString());}
+    finally{if(mounted)setState(()=>busy=false);}
     if(mounted){setState(()=>notice='Photo uploaded successfully.');await load();}
   }
   Future<void> action(String id,bool primary)async{setState(()=>busy=true);try{if(primary){await widget.apiClient.put('/user-profile/photos/'+id+'/primary',body:{},authenticated:true);}else{await widget.apiClient.delete('/user-profile/photos/'+id,authenticated:true);cache.remove(id);}await load();}catch(e){setState(()=>error=e.toString());}finally{if(mounted)setState(()=>busy=false);}}
