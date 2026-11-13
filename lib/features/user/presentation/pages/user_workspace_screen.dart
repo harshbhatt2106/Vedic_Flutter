@@ -47,7 +47,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     setState(()=>{loading=true,error=null});
     try {
       if(widget.kind=='discover'){
-        final r=await widget.api.get('/user-profile/discover?pageNumber=1&pageSize=20',authenticated:true);
+        final query=Uri(queryParameters:{if(a.text.trim().isNotEmpty)'search':a.text.trim(),if(b.text.trim().isNotEmpty)'minAge':b.text.trim(),if(c.text.trim().isNotEmpty)'maxAge':c.text.trim(),if(d.text.trim().isNotEmpty)'religionId':d.text.trim(),if(e.text.trim().isNotEmpty)'casteId':e.text.trim(),'pageNumber':'1','pageSize':'20'}).query;\n        final r=await widget.api.get('/user-profile/discover?'+query,authenticated:true);
         final raw=r['data']; final list=raw is Map?raw['items']:raw;
         items=list is List?list.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];
       } else if(widget.kind=='profile'){
@@ -95,6 +95,12 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     ]));
   }
   List<Widget> discover()=>[
+    panel(Column(children:[
+      field('Name or keyword',a),
+      Row(children:[Expanded(child:field('Min age',b,keyboard:TextInputType.number)),const SizedBox(width:8),Expanded(child:field('Max age',c,keyboard:TextInputType.number))]),
+      Row(children:[Expanded(child:field('Religion ID',d,keyboard:TextInputType.number)),const SizedBox(width:8),Expanded(child:field('Caste ID',e,keyboard:TextInputType.number))]),
+      button('Apply filters',load),
+    ])),
     if(items.isEmpty)panel(const Text('No profiles found. Complete your profile and try again.')),
     ...items.map((p){final id=(p['userId']??p['id']??'').toString();final name=(''+(p['firstName']??'').toString()+' '+(p['lastName']??'').toString()).trim();
       final details=[p['profession'],p['education'],p['cityName'],p['religionName'],p['casteName']].where((x)=>x!=null&&x.toString().isNotEmpty).join(' · ');
@@ -103,9 +109,25 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         if(details.isNotEmpty)Text(details,style:const TextStyle(color:AppPalette.secondary,fontSize:12)),
         if((p['aboutMe']??'').toString().isNotEmpty)Text(p['aboutMe'].toString(),maxLines:2,overflow:TextOverflow.ellipsis),
         Row(children:[Expanded(child:TextButton(onPressed:working||id.isEmpty?null:()=>run(()async{await widget.api.post('/shortlists/'+id,body:{},authenticated:true);setState(()=>notice='Profile added to shortlist.');}),child:const Text('Shortlist'))),Expanded(child:FilledButton(onPressed:working||id.isEmpty?null:()=>run(()async{await widget.api.post('/interests/'+id,body:{},authenticated:true);setState(()=>notice='Interest sent.');}),child:const Text('Send interest')))]),
+        Wrap(spacing:8,children:[
+          TextButton(onPressed:working||id.isEmpty?null:()=>_report(id),child:const Text('Report')),
+          TextButton(onPressed:working||id.isEmpty?null:()=>_block(id),child:const Text('Block')),
+        ]),
       ])));
     }),
   ];
+  Future<void> _report(String userId) async {
+    final reason=TextEditingController();
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Report profile'),content:TextField(controller:reason,maxLines:3,decoration:const InputDecoration(hintText:'Describe the issue')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Submit'))]));
+    if(ok!=true)return;
+    await run(()async{if(reason.text.trim().isEmpty)throw Exception('Please enter a reason.');await widget.api.post('/reports/'+userId,body:{'reason':reason.text.trim()},authenticated:true);setState(()=>notice='Report submitted.');});
+    reason.dispose();
+  }
+  Future<void> _block(String userId) async {
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Block profile'),content:const Text('You will no longer see this profile in your matches.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Block'))]));
+    if(ok!=true)return;
+    await run(()async{await widget.api.post('/blocks/'+userId,body:{'reason':'Blocked from profile discovery'},authenticated:true);setState(()=>notice='Profile blocked.');await load();});
+  }
   List<Widget> profile()=>[
     panel(Column(children:[
       field('First name',a),field('Last name',b),field('Date of birth (YYYY-MM-DD)',c),field('Gender',d),field('About me',e,lines:4),
