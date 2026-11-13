@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
@@ -216,32 +217,57 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     }),
   ];
   Future<void> _viewProfile(String userId) async {
-    showModalBottomSheet(context:context,isScrollControlled:true,builder:(ctx)=>FutureBuilder<Map<String,dynamic>>(
-      future:widget.api.get('/user-profile/$userId',authenticated:true).then((r)=>r['data'] is Map?Map<String,dynamic>.from(r['data']):<String,dynamic>{}),
-      builder:(context,snapshot){
-        if(snapshot.connectionState!=ConnectionState.done)return const SizedBox(height:260,child:Center(child:CircularProgressIndicator()));
-        if(snapshot.hasError)return SizedBox(height:220,child:Center(child:Text(snapshot.error.toString())));
-        final p=snapshot.data??{};
-        final fields=<String,String>{'Age':p['dateOfBirth']?.toString()??'','Gender':p['gender']?.toString()??'','Religion':p['religionName']?.toString()??'','Caste':p['casteName']?.toString()??'','Sub-caste':p['subCasteName']?.toString()??'','Education':p['education']?.toString()??'','Profession':p['profession']?.toString()??'','Location':p['cityName']?.toString()??'','Marital status':p['maritalStatus']?.toString()??'','About':p['aboutMe']?.toString()??''};
-        return SafeArea(child:Padding(padding:const EdgeInsets.all(18),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Text('${p['firstName']??'VedicVivah'} ${p['lastName']??'member'}',style:const TextStyle(fontSize:22,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),
-          const SizedBox(height:12),Flexible(child:ListView(shrinkWrap:true,children:fields.entries.where((e)=>e.value.isNotEmpty).map((e)=>Padding(padding:const EdgeInsets.symmetric(vertical:5),child:Text('${e.key}: ${e.value}'))).toList())),
-          SizedBox(width:double.infinity,child:FilledButton(onPressed:()=>Navigator.pop(context),child:const Text('Close'))),
-        ])));
-      },
-    ));
+    try{
+      setState(()=>working=true);
+      final response=await widget.api.get('/user-profile/$userId',authenticated:true);
+      final p=response['data'] is Map?Map<String,dynamic>.from(response['data']):<String,dynamic>{};
+      var accepted=false;
+      try{final status=await widget.api.get('/interests/status/$userId',authenticated:true);accepted=status['data']?.toString()=='Accepted';}catch(_){}
+      final photoBytes=<Uint8List>[];
+      if(accepted){
+        try{
+          final photoResponse=await widget.api.get('/user-profile/$userId/photos',authenticated:true);
+          final list=photoResponse['data'];
+          if(list is List){
+            for(final item in list.whereType<Map>){
+              final photoId=item['id']?.toString()??'';
+              if(photoId.isEmpty)continue;
+              try{photoBytes.add(await widget.api.getBytes('/user-profile/$userId/photos/$photoId/content',authenticated:true));}catch(_){}
+            }
+          }
+        }catch(_){}
+      }
+      if(!mounted)return;
+      final dob=DateTime.tryParse(p['dateOfBirth']?.toString()??'');
+      String age='';if(dob!=null){final now=DateTime.now();var years=now.year-dob.year;if(now.month<dob.month||(now.month==dob.month&&now.day<dob.day))years--;age='$years years';}
+      await showModalBottomSheet(context:context,isScrollControlled:true,builder:(ctx)=>SafeArea(child:Padding(padding:const EdgeInsets.all(18),child:SizedBox(height:MediaQuery.of(ctx).size.height*.82,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text('${p['firstName']??'VedicVivah'} ${p['lastName']??'member'}',style:const TextStyle(fontSize:22,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),
+        const SizedBox(height:10),
+        Expanded(child:ListView(children:[
+          if(photoBytes.isNotEmpty)SizedBox(height:190,child:ListView.separated(scrollDirection:Axis.horizontal,itemCount:photoBytes.length,separatorBuilder:(_,__)=>const SizedBox(width:8),itemBuilder:(context,index)=>ClipRRect(borderRadius:BorderRadius.circular(12),child:Image.memory(photoBytes[index],width:150,height:180,fit:BoxFit.cover)))),
+          if(accepted&&photoBytes.isEmpty)const Text('No profile photos available.'),
+          if(!accepted)const Text('Profile photos become available after the interest is accepted.',style:TextStyle(color:AppPalette.secondary)),
+          ...<String,String>{'Age':age,'Gender':p['gender']?.toString()??'','Religion':p['religionName']?.toString()??'','Caste':p['casteName']?.toString()??'','Sub-caste':p['subCasteName']?.toString()??'','Mother tongue':p['motherTongue']?.toString()??'','Education':p['education']?.toString()??'','Qualification':p['qualification']?.toString()??'','Profession':p['profession']?.toString()??'','Work type':p['workType']?.toString()??'','Location':p['cityName']?.toString()??'','Marital status':p['maritalStatus']?.toString()??'','About':p['aboutMe']?.toString()??''}.entries.where((e)=>e.value.isNotEmpty).map((e)=>Padding(padding:const EdgeInsets.symmetric(vertical:5),child:Text('${e.key}: ${e.value}'))),
+        ])),
+        SizedBox(width:double.infinity,child:FilledButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Close'))),
+      ])))));
+    }catch(e){if(mounted)setState(()=>error=e.toString().replaceFirst('ApiException: ',''));}
+    finally{if(mounted)setState(()=>working=false);}
   }
   Future<void> _report(String userId) async {
     final reason=TextEditingController();
-    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Report profile'),content:TextField(controller:reason,maxLines:3,decoration:const InputDecoration(hintText:'Describe the issue')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Submit'))]));
-    if(ok!=true)return;
-    await run(()async{if(reason.text.trim().isEmpty)throw Exception('Please enter a reason.');await widget.api.post('/reports/'+userId,body:{'reason':reason.text.trim()},authenticated:true);setState(()=>notice='Report submitted.');});
+    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Report profile'),content:TextField(controller:reason,maxLength:2000,maxLines:4,decoration:const InputDecoration(hintText:'Describe the issue in detail (at least 10 characters).')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Submit report'))]));
+    if(ok==true){
+      await run(()async{final value=reason.text.trim();if(value.length<10)throw Exception('Please provide at least 10 characters of detail.');await widget.api.post('/reports/'+userId,body:{'reason':value},authenticated:true);setState(()=>notice='Report submitted.');});
+    }
     reason.dispose();
   }
   Future<void> _block(String userId) async {
-    final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Block profile'),content:const Text('You will no longer see this profile in your matches.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Block'))]));
-    if(ok!=true)return;
-    await run(()async{await widget.api.post('/blocks/'+userId,body:{'reason':'Blocked from profile discovery'},authenticated:true);setState(()=>notice='Profile blocked.');await load();});
+    const reasons=['Not interested','Inappropriate content','Harassment or abusive behavior','Fake or suspicious profile','Other'];
+    String selected=reasons.first;
+    final reason=await showDialog<String>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(title:const Text('Block profile'),content:Column(mainAxisSize:MainAxisSize.min,children:[const Text('You will no longer see this profile in your matches.'),const SizedBox(height:12),DropdownButtonFormField<String>(value:selected,decoration:const InputDecoration(labelText:'Reason',filled:true),items:reasons.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setDialog(()=>selected=v??selected))]),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,selected),child:const Text('Block'))])));
+    if(reason==null)return;
+    await run(()async{await widget.api.post('/blocks/'+userId,body:{'reason':reason},authenticated:true);setState(()=>notice='Profile blocked.');await load();});
   }
   List<Widget> profile()=>[
     panel(Column(children:[
