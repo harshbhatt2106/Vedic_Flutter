@@ -82,6 +82,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     setState(() { loading=true; error=null; });
     try {
       if(widget.kind=='discover'){
+        if(!_discoverPreferencesLoaded)await _loadSavedDiscoverPreferences();
         final params=<String,String>{'pageNumber':discoverPage.toString(),'pageSize':'20'};
         for(final entry in {'search':a,'minAge':b,'maxAge':c}.entries){if(entry.value.text.trim().isNotEmpty)params[entry.key]=entry.value.text.trim();}
         for(final entry in filters.entries){if(entry.value.text.trim().isNotEmpty)params[entry.key]=entry.value.text.trim();}
@@ -171,6 +172,33 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     }
     return SizedBox(width:150,child:TextField(controller:filters[key],keyboardType:numeric?TextInputType.number:TextInputType.text,decoration:InputDecoration(labelText:label,filled:true,isDense:true)));
   }
+  Future<void> _loadSavedDiscoverPreferences({bool force=false})async{
+    if(_discoverPreferencesLoaded&&!force)return;
+    if(force){for(final controller in [a,b,c,...filters.values]){controller.clear();}}
+    try{
+      final results=await Future.wait([
+        widget.api.get('/partner-preferences',authenticated:true),
+        widget.api.get('/user-profile',authenticated:true).catchError((_) => <String,dynamic>{'data':null}),
+      ]);
+      final pref=results[0]['data'],profile=results[1]['data'];
+      final ownGender=profile is Map?profile['gender']?.toString():'';
+      final opposite=ownGender=='Male'?'Female':ownGender=='Female'?'Male':'';
+      final values=pref is Map?Map<String,dynamic>.from(pref):<String,dynamic>{};
+      filters['preferredGender']!.text=values['preferredGender']?.toString()??opposite;
+      filters['maritalStatus']!.text=values['maritalStatus']?.toString()??'';
+      final age=values['age'];
+      if(age is Map){final min=(age['minAge'] as num?)?.toInt(),max=(age['maxAge'] as num?)?.toInt();if(!(min==21&&max==35)){b.text=min?.toString()??'';c.text=max?.toString()??'';}}
+      final height=values['height'];
+      if(height is Map){filters['minHeightFeet']!.text=height['minFeet']?.toString()??'';filters['minHeightInches']!.text=height['minInches']?.toString()??'';filters['maxHeightFeet']!.text=height['maxFeet']?.toString()??'';filters['maxHeightInches']!.text=height['maxInches']?.toString()??'';}
+      final community=values['community'];
+      if(community is Map){for(final key in ['religionId','casteId','subCasteId','motherTongue']){filters[key]!.text=community[key]?.toString()??'';}}
+      final career=values['career'];
+      if(career is Map){for(final key in ['educationFieldId','courseId','qualificationId','occupationId','professionId','workType','minYearlyIncome','maxYearlyIncome']){filters[key]!.text=career[key]?.toString()??'';}}
+      final location=values['location'];
+      if(location is Map){for(final key in ['countryId','stateId','cityId']){filters[key]!.text=location[key]?.toString()??'';}}
+    }catch(_){}
+    _discoverPreferencesLoaded=true;
+  }
   Future<void> _fetchDiscoverOptions(String key,String path)async{
     try{final r=await widget.api.get(path,authenticated:true);final d=r['data'];discoveryOptions[key]=d is List?d.whereType<Map>().map((raw){final x=Map<String,dynamic>.from(raw);if(path.contains('/locations/countries'))return {'id':x['countryId'],'name':x['countryName']};if(path.contains('/locations/states'))return {'id':x['stateId'],'name':x['stateName']};if(path.contains('/locations/cities'))return {'id':x['cityId'],'name':x['cityName']};return x;}).toList():[];}catch(_){discoveryOptions[key]=[];}
   }
@@ -191,7 +219,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     final id=int.tryParse(value??'');
     final next=<String,String>{'religionId':'casteId','casteId':'subCasteId','educationFieldId':'courseId','occupationId':'professionId','countryId':'stateId','stateId':'cityId'};
     final child=next[key];if(child!=null&&id!=null){final route=switch(key){'religionId'=>'/reference-data/castes?religionId=$id','casteId'=>'/reference-data/sub-castes?casteId=$id','educationFieldId'=>'/reference-data/courses?educationFieldId=$id','occupationId'=>'/reference-data/professions?occupationId=$id','countryId'=>'/locations/states?countryId=$id',_=>'/locations/cities?stateId=$id'};await _fetchDiscoverOptions(child,route);}
-    if(mounted)setState((){});
+    if(mounted){setState((){});_discoverModalSetState?.call((){});}
   }
   Future<void> clearDiscoverFilters()async{
     for(final controller in [a,b,c,...filters.values]){controller.clear();}
