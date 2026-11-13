@@ -85,6 +85,9 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
   }
   Future<void> changeOption(String key,int? value)async{
     fields[key]!.text=value?.toString()??'';
+    const nameFields=<String,String>{'motherTongueId':'motherTongue','qualificationId':'qualification','educationFieldId':'education','courseId':'course','occupationId':'occupation','professionId':'profession'};
+    final nameKey=nameFields[key];
+    if(nameKey!=null){final selected=(options[key]??[]).where((x)=>(x['id'] as num?)?.toInt()==value).firstOrNull;fields[nameKey]!.text=selected?['name']?.toString()??'';}
     final dependencies=<String,Map<String,String>>{
       'religionId':{'casteId':'/reference-data/castes?religionId=$value'},
       'casteId':{'subCasteId':'/reference-data/sub-castes?casteId=$value'},
