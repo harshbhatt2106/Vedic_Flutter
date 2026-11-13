@@ -392,6 +392,10 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     ])),
   ];
   Widget prefField(String label,String key){
+    if(key=='motherTongue'){
+      final list=prefOptions[key]??const <Map<String,dynamic>>[];final current=prefFields[key]!.text;
+      return Padding(padding:const EdgeInsets.only(bottom:8),child:DropdownButtonFormField<String>(initialValue:list.any((x)=>x['name']?.toString()==current)?current:null,isExpanded:true,decoration:InputDecoration(labelText:label,filled:true),items:list.map((x)=>DropdownMenuItem<String>(value:x['name'].toString(),child:Text(x['name'].toString(),overflow:TextOverflow.ellipsis))).toList(),onChanged:(v)=>setState(()=>prefFields[key]!.text=v??'')));
+    }
     const ids={'religionId','casteId','subCasteId','educationFieldId','courseId','qualificationId','occupationId','professionId','countryId','stateId','cityId'};
     if(!ids.contains(key))return Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:prefFields[key],keyboardType:key.contains('Income')?const TextInputType.numberWithOptions(decimal:true):TextInputType.text,decoration:InputDecoration(labelText:label,filled:true)));
     final list=prefOptions[key]??const <Map<String,dynamic>>[];final current=int.tryParse(prefFields[key]!.text);final value=list.any((x)=>(x['id'] as num?)?.toInt()==current)?current:null;
@@ -401,7 +405,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     try{final r=await widget.api.get(path,authenticated:true);final d=r['data'];prefOptions[key]=d is List?d.whereType<Map>().map((raw){final x=Map<String,dynamic>.from(raw);if(path.contains('/locations/countries'))return {'id':x['countryId'],'name':x['countryName']};if(path.contains('/locations/states'))return {'id':x['stateId'],'name':x['stateName']};if(path.contains('/locations/cities'))return {'id':x['cityId'],'name':x['cityName']};return x;}).toList():[];}catch(_){prefOptions[key]=[];}
   }
   Future<void> _loadPreferenceOptions()async{
-    final base=<String,String>{'religionId':'/reference-data/religions','qualificationId':'/reference-data/qualifications','educationFieldId':'/reference-data/education-fields','occupationId':'/reference-data/occupations','countryId':'/locations/countries'};
+    final base=<String,String>{'religionId':'/reference-data/religions','motherTongue':'/reference-data/mother-tongues','qualificationId':'/reference-data/qualifications','educationFieldId':'/reference-data/education-fields','occupationId':'/reference-data/occupations','countryId':'/locations/countries'};
     for(final e in base.entries){await _fetchPrefOptions(e.key,e.value);}
     final religion=int.tryParse(prefFields['religionId']!.text),caste=int.tryParse(prefFields['casteId']!.text),education=int.tryParse(prefFields['educationFieldId']!.text),occupation=int.tryParse(prefFields['occupationId']!.text),country=int.tryParse(prefFields['countryId']!.text),state=int.tryParse(prefFields['stateId']!.text);
     if(religion!=null)await _fetchPrefOptions('casteId','/reference-data/castes?religionId=$religion');
