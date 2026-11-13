@@ -4,6 +4,7 @@ import '../../../../core/api/api_client.dart';
 import '../../../auth/data/models/auth_models.dart';
 import 'dashboard/user_dashboard_screen.dart';
 import 'user_tools_screen.dart';
+import 'user_interests_screen.dart';
 
 class UserPanelShell extends StatefulWidget {
   const UserPanelShell({super.key, required this.apiClient, required this.session, required this.onSignOut});
@@ -26,6 +27,7 @@ class _UserPanelShellState extends State<UserPanelShell> {
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.shortlist),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.blocked),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.reports),
+      UserInterestsScreen(apiClient: widget.apiClient),
     ];
     return Scaffold(
       backgroundColor: AppPalette.background,
@@ -41,6 +43,7 @@ class _UserPanelShellState extends State<UserPanelShell> {
           NavigationDestination(icon: Icon(Icons.favorite_border), selectedIcon: Icon(Icons.favorite), label: 'Shortlist'),
           NavigationDestination(icon: Icon(Icons.block_outlined), selectedIcon: Icon(Icons.block), label: 'Blocked'),
           NavigationDestination(icon: Icon(Icons.flag_outlined), selectedIcon: Icon(Icons.flag), label: 'Reports'),
+          NavigationDestination(icon: Icon(Icons.favorite_outline), selectedIcon: Icon(Icons.favorite), label: 'Interests'),
         ],
       ),
     );
