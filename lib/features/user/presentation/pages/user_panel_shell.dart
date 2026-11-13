@@ -39,7 +39,7 @@ class _UserPanelShellState extends State<UserPanelShell> {
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.shortlist),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.blocked),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.reports),
-      UserInterestsScreen(apiClient: widget.apiClient),
+      UserInterestsScreen(apiClient: widget.apiClient, onOpenChat: ()=>_navigateFromDashboard(14)),
       UserWorkspaceScreen(apiClient: widget.apiClient, initialTab: _workspaceInitialTab),
       UserAccountPrivacyScreen(apiClient: widget.apiClient, onSignOut: widget.onSignOut),
     ];
