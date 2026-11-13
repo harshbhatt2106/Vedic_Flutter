@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../errors/api_exception.dart';
@@ -17,6 +18,48 @@ class ApiClient {
       _request('GET', path, authenticated: authenticated);
   Future<Map<String, dynamic>> post(String path, {required Map<String, dynamic> body, bool authenticated = false}) =>
       _request('POST', path, body: body, authenticated: authenticated);
+  Future<Map<String, dynamic>> put(String path, {required Map<String, dynamic> body, bool authenticated = false}) =>
+      _request('PUT', path, body: body, authenticated: authenticated);
+
+  Future<Uint8List> getBytes(String path, {bool authenticated = false, bool retryAfterRefresh = true}) async {
+    final headers = <String, String>{'Accept': '*/*'};
+    final token = _sessionStore.current?.accessToken;
+    if (authenticated && token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    try {
+      final response = await _client.get(AppConfig.endpoint(path), headers: headers).timeout(_timeout);
+      if (response.statusCode == 401 && authenticated && retryAfterRefresh && !path.startsWith('/auth/')) {
+        if (await _refreshSession()) {
+          return getBytes(path, authenticated: true, retryAfterRefresh: false);
+        }
+        await _sessionStore.clear();
+        throw const ApiException(message: 'Your session has expired. Please sign in again.', statusCode: 401);
+      }
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        String? message;
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) message = decoded['message']?.toString();
+        } catch (_) {
+          // Binary endpoints may return non-JSON error bodies.
+        }
+        throw ApiException(
+          message: message?.trim().isNotEmpty == true ? message!.trim() : _fallbackMessage(response.statusCode),
+          statusCode: response.statusCode,
+        );
+      }
+      return response.bodyBytes;
+    } on ApiException {
+      rethrow;
+    } on ApiConfigurationException catch (e) {
+      throw ApiException(message: e.message);
+    } on TimeoutException {
+      throw const ApiException(message: 'The request timed out. Check your connection and try again.');
+    } catch (_) {
+      throw const ApiException(message: 'Unable to load this file from VedicVivah.');
+    }
+  }
 
   Future<Map<String, dynamic>> _request(String method, String path, {
     Map<String, dynamic>? body, required bool authenticated, bool retryAfterRefresh = true,
