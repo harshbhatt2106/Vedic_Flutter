@@ -258,7 +258,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
           final photoResponse=await widget.api.get('/user-profile/$userId/photos',authenticated:true);
           final list=photoResponse['data'];
           if(list is List){
-            for(final item in list.whereType<Map>){
+            for(final item in list.whereType<Map>()){
               final photoId=item['id']?.toString()??'';
               if(photoId.isEmpty)continue;
               try{photoBytes.add(await widget.api.getBytes('/user-profile/$userId/photos/$photoId/content',authenticated:true));}catch(_){}
