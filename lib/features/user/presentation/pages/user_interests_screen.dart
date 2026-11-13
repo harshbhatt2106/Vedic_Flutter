@@ -151,12 +151,16 @@ class _UserInterestsScreenState extends State<UserInterestsScreen> with SingleTi
     final last = _read(item, ['lastName']);
     final name = (first + ' ' + last).trim();
     final status = _read(item, ['status']);
-    final details = [_read(item, ['profession']), _read(item, ['cityName']), _read(item, ['religionName']), _read(item, ['casteName'])]
+    final dob=DateTime.tryParse(_read(item,['dateOfBirth']));
+    String age='';if(dob!=null){final now=DateTime.now();var years=now.year-dob.year;if(now.month<dob.month||(now.month==dob.month&&now.day<dob.day))years--;age='$years yrs';}
+    final details = [age,_read(item,['gender']),_read(item, ['profession']), _read(item, ['cityName']), _read(item, ['religionName']), _read(item, ['casteName'])]
         .where((value) => value.isNotEmpty).join(' · ');
     final actions = <Widget>[];
     if (received && status == 'Pending') {
       actions.add(TextButton(onPressed: _working ? null : () => _act(item, 'reject'), child: const Text('Reject')));
       actions.add(FilledButton(onPressed: _working ? null : () => _act(item, 'accept'), child: const Text('Accept')));
+    } else if (received && status == 'Rejected') {
+      actions.add(FilledButton(onPressed:_working?null:()=>_act(item,'accept'),child:const Text('Accept')));
     } else if (!received && status == 'Rejected') {
       actions.add(FilledButton(onPressed: _working ? null : () => _act(item, 'resubmit'), child: const Text('Resend')));
     } else if (!received && status == 'Pending') {
@@ -164,6 +168,7 @@ class _UserInterestsScreenState extends State<UserInterestsScreen> with SingleTi
     } else if (status == 'Accepted') {
       actions.add(const Text('Accepted', style: TextStyle(color: AppPalette.gold, fontWeight: FontWeight.w600)));
       actions.add(TextButton(onPressed:_working?null:()=>_openChat(item),child:const Text('Message')));
+      if(received)actions.add(TextButton(onPressed:_working?null:()=>_act(item,'reject'),child:const Text('Reject connection')));
     }
     return Card(
       color: AppPalette.surface,
@@ -183,7 +188,7 @@ class _UserInterestsScreenState extends State<UserInterestsScreen> with SingleTi
           ]),
           if (actions.isNotEmpty) Padding(
             padding: const EdgeInsets.only(top: 12),
-            child: Row(mainAxisAlignment: MainAxisAlignment.end, children: actions),
+            child: Wrap(alignment:WrapAlignment.end,spacing:8,runSpacing:4,children:actions),
           ),
         ]),
       ),
