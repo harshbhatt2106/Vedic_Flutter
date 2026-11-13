@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../app/theme/app_theme.dart';
-import '../../../../core/api/api_client.dart';
+import '../../../../../app/theme/app_theme.dart';
+import '../../../../../core/api/api_client.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({
