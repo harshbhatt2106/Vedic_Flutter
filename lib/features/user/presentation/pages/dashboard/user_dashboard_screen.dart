@@ -4,8 +4,8 @@ import '../../../../../core/api/api_client.dart';
 import '../../../../auth/data/models/auth_models.dart';
 
 class UserDashboardScreen extends StatefulWidget {
- const UserDashboardScreen({super.key,required this.apiClient,required this.session,required this.onSignOut});
- final ApiClient apiClient; final AuthSession session; final Future<void> Function() onSignOut;
+ const UserDashboardScreen({super.key,required this.apiClient,required this.session,required this.onSignOut,required this.onNavigate});
+ final ApiClient apiClient; final AuthSession session; final Future<void> Function() onSignOut; final ValueChanged<int> onNavigate;
  @override State<UserDashboardScreen> createState()=>_UserDashboardScreenState();
 }
 class _UserDashboardScreenState extends State<UserDashboardScreen>{
@@ -59,7 +59,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  const SizedBox(height:6),const Text('Your journey towards a meaningful bond begins here.',style:TextStyle(fontSize:13,color:AppPalette.secondary,fontFamily:'sans-serif')),
  const SizedBox(height:18),if(_error!=null)_errorCard(),
  _hero(p),const SizedBox(height:15),_strength(percent,done),const SizedBox(height:15),
- Row(children:[Expanded(child:_stat('SHORTLISTED',_shortlist.length,Icons.favorite_border)),const SizedBox(width:9),Expanded(child:_stat('UNREAD UPDATES',unread,Icons.notifications_none)),const SizedBox(width:9),Expanded(child:_stat('PHOTOS',_photos.length,Icons.photo_camera_back_outlined))]),
+ Row(children:[Expanded(child:_stat('SHORTLISTED',_shortlist.length,Icons.favorite_border,()=>widget.onNavigate(2))),const SizedBox(width:9),Expanded(child:_stat('UNREAD UPDATES',unread,Icons.notifications_none,()=>widget.onNavigate(1))),const SizedBox(width:9),Expanded(child:_stat('PHOTOS',_photos.length,Icons.photo_camera_back_outlined,()=>widget.onNavigate(6)))]),
+ const SizedBox(height:14),_quickActions(),
  const SizedBox(height:23),_heading('Latest updates','Recent account activity'),const SizedBox(height:9),_notificationsCard(),
  const SizedBox(height:22),_heading('Your shortlist','Profiles saved for later'),const SizedBox(height:9),_shortlistCard(),
  if(_loading)const Padding(padding:EdgeInsets.only(top:22),child:Center(child:CircularProgressIndicator(color:AppPalette.maroon))),
@@ -83,7 +84,13 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  const SizedBox(height:9),Text('$done of 10 sections complete',style:const TextStyle(color:AppPalette.secondary,fontSize:12,fontFamily:'sans-serif')),
  if(percent<100)const Padding(padding:EdgeInsets.only(top:8),child:Text('Complete your biodata to help families understand you better.',style:TextStyle(color:AppPalette.secondary,fontSize:12,height:1.4,fontFamily:'sans-serif'))),
  ]));
- Widget _stat(String title,int value,IconData icon)=>_panel(Column(children:[Icon(icon,color:AppPalette.gold,size:20),const SizedBox(height:7),Text(value.toString(),style:const TextStyle(color:AppPalette.darkMaroon,fontSize:20,fontWeight:FontWeight.w700)),const SizedBox(height:4),Text(title,textAlign:TextAlign.center,style:const TextStyle(color:AppPalette.secondary,fontSize:9,fontWeight:FontWeight.w700,letterSpacing:.3,fontFamily:'sans-serif'))]),padding:const EdgeInsets.symmetric(vertical:13,horizontal:5));
+ Widget _stat(String title,int value,IconData icon,VoidCallback onTap)=>InkWell(onTap:onTap,borderRadius:BorderRadius.circular(17),child:_panel(Column(children:[Icon(icon,color:AppPalette.gold,size:20),const SizedBox(height:7),Text(value.toString(),style:const TextStyle(color:AppPalette.darkMaroon,fontSize:20,fontWeight:FontWeight.w700)),const SizedBox(height:4),Text(title,textAlign:TextAlign.center,style:const TextStyle(color:AppPalette.secondary,fontSize:9,fontWeight:FontWeight.w700,letterSpacing:.3,fontFamily:'sans-serif'))]),padding:const EdgeInsets.symmetric(vertical:13,horizontal:5)));
+ Widget _quickActions()=>_panel(Wrap(spacing:8,runSpacing:8,children:[
+  OutlinedButton.icon(onPressed:()=>widget.onNavigate(6),icon:const Icon(Icons.search),label:const Text('Find matches')),
+  OutlinedButton.icon(onPressed:()=>widget.onNavigate(6),icon:const Icon(Icons.person_outline),label:const Text('Edit biodata')),
+  OutlinedButton.icon(onPressed:()=>widget.onNavigate(5),icon:const Icon(Icons.favorite_outline),label:const Text('Interests')),
+  OutlinedButton.icon(onPressed:()=>widget.onNavigate(6),icon:const Icon(Icons.chat_bubble_outline),label:const Text('Messages')),
+ ]));
  Widget _heading(String title,String sub)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(color:AppPalette.darkMaroon,fontSize:21,fontWeight:FontWeight.w600)),Text(sub,style:const TextStyle(color:AppPalette.secondary,fontSize:12,fontFamily:'sans-serif'))]);
  Widget _notificationsCard(){if(_notifications.isEmpty)return _empty('You are all caught up. New updates will appear here.');return _panel(Column(children:_notifications.take(4).map((raw){final x=raw as Map<String,dynamic>;return ListTile(dense:true,leading:Icon(x['isRead']==true?Icons.notifications_none:Icons.notifications_active_outlined,color:AppPalette.gold),title:Text(x['title']?.toString()??'Update',style:const TextStyle(fontSize:13,color:AppPalette.ink,fontWeight:FontWeight.w600)),subtitle:Text(x['message']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:11,color:AppPalette.secondary)),trailing:Text(_ago(x['createdAtUtc']),style:const TextStyle(fontSize:10,color:AppPalette.secondary)));}).toList()));}
  Widget _shortlistCard(){if(_shortlist.isEmpty)return _empty('Save profiles with the heart icon and they will appear here.');return _panel(Column(children:_shortlist.take(4).map((raw){final x=raw as Map<String,dynamic>;final name='${x['firstName']??''} ${x['lastName']??''}'.trim();final detail=[x['profession'],x['cityName']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' · ');return ListTile(dense:true,leading:CircleAvatar(backgroundColor:AppPalette.champagne,foregroundColor:AppPalette.darkMaroon,child:Text(name.isEmpty?'V':name[0].toUpperCase())),title:Text(name.isEmpty?'VedicVivah member':name,style:const TextStyle(fontSize:13,color:AppPalette.ink,fontWeight:FontWeight.w600)),subtitle:Text(detail,style:const TextStyle(fontSize:11,color:AppPalette.secondary)),trailing:const Icon(Icons.favorite,color:AppPalette.maroon,size:17));}).toList()));}
