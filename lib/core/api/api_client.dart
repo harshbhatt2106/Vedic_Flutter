@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../config/app_config.dart';
 import '../errors/api_exception.dart';
 import '../storage/session_store.dart';
@@ -84,9 +85,11 @@ class ApiClient {
     bool retryAfterRefresh = true,
   }) async {
     try {
+      final extension=filename.split('.').last.toLowerCase();
+      final mediaType=switch(extension){'jpg'||'jpeg'=>MediaType('image','jpeg'),'png'=>MediaType('image','png'),'webp'=>MediaType('image','webp'),_=>MediaType('application','octet-stream')};
       final request = http.MultipartRequest('POST', AppConfig.endpoint(path))
         ..headers['Accept'] = 'application/json'
-        ..files.add(http.MultipartFile.fromBytes(fieldName, bytes, filename: filename));
+        ..files.add(http.MultipartFile.fromBytes(fieldName, bytes, filename: filename, contentType: mediaType));
       final token = _sessionStore.current?.accessToken;
       if (authenticated && token != null && token.isNotEmpty) request.headers['Authorization'] = 'Bearer $token';
       final streamed = await _client.send(request).timeout(_timeout);
@@ -119,9 +122,11 @@ class ApiClient {
     bool retryAfterRefresh = true,
   }) async {
     try {
+      final extension=filename.split('.').last.toLowerCase();
+      final mediaType=switch(extension){'jpg'||'jpeg'=>MediaType('image','jpeg'),'png'=>MediaType('image','png'),'webp'=>MediaType('image','webp'),_=>MediaType('application','octet-stream')};
       final request = http.MultipartRequest('PUT', AppConfig.endpoint(path))
         ..headers['Accept'] = 'application/json'
-        ..files.add(http.MultipartFile.fromBytes(fieldName, bytes, filename: filename));
+        ..files.add(http.MultipartFile.fromBytes(fieldName, bytes, filename: filename, contentType: mediaType));
       final token = _sessionStore.current?.accessToken;
       if (authenticated && token != null && token.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer $token';
