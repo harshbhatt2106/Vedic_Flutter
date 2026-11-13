@@ -59,7 +59,9 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         final query=Uri(queryParameters:params).query;
         final r=await widget.api.get('/user-profile/discover?'+query,authenticated:true);
         final raw=r['data']; final list=raw is Map?raw['items']:raw;
-        final next=list is List?list.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():<Map<String,dynamic>>[];\n        items=discoverPage>1?[...items,...next]:next;\n        totalPages=(raw is Map?(raw['totalPages'] as num?)?.toInt():null)??1;
+        final next=list is List?list.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():<Map<String,dynamic>>[];
+        items=discoverPage>1?[...items,...next]:next;
+        totalPages=(raw is Map?(raw['totalPages'] as num?)?.toInt():null)??1;
       } else if(widget.kind=='profile'){
         final r=await widget.api.get('/user-profile',authenticated:true); final raw=r['data'];
         if(raw is Map){data=Map<String,dynamic>.from(raw);a.text=data['firstName']?.toString()??'';b.text=data['lastName']?.toString()??'';c.text=data['dateOfBirth']?.toString().split('T').first??'';d.text=data['gender']?.toString()??'';e.text=data['aboutMe']?.toString()??'';}
