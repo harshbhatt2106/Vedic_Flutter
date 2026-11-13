@@ -216,8 +216,7 @@ class _UserToolsScreenState extends State<UserToolsScreen> {
         onTap: widget.kind == UserToolKind.shortlist ? () => _viewShortlistedProfile(item) : widget.kind == UserToolKind.notifications && item['isRead'] != true ? () => _action(item) : null,
         leading: CircleAvatar(backgroundColor: AppPalette.champagne, child: Icon(icon, color: AppPalette.maroon)),
         title: Text(title.isEmpty ? 'VedicVivah member' : title, style: const TextStyle(color: AppPalette.darkMaroon, fontWeight: FontWeight.w600)),
-        subtitle: Text([detail, date].where((e) => e.isNotEmpty).join('
-')),
+        subtitle: Text([detail, date].where((e) => e.isNotEmpty).join('\\n')),
         trailing: canAct ? IconButton(
           onPressed: _working ? null : () => _action(item),
           icon: Icon(widget.kind == UserToolKind.notifications ? Icons.done : Icons.close, color: AppPalette.maroon),
