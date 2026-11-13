@@ -88,6 +88,13 @@ class _UserToolsScreenState extends State<UserToolsScreen> {
   Future<void> _action(Map<String, dynamic> item) async {
     final id = _itemId(item);
     if (id.isEmpty) return;
+    if (widget.kind == UserToolKind.notifications) {
+      setState(() => _working = true);
+      try { await widget.apiClient.put('/notifications/' + id + '/read', body: {}, authenticated: true); await _load(); }
+      catch (error) { if (mounted) setState(() => _error = error.toString().replaceFirst('ApiException: ', '')); }
+      finally { if (mounted) setState(() => _working = false); }
+      return;
+    }
     final prompt = switch (widget.kind) {
       UserToolKind.notifications => 'Mark this notification as read?',
       UserToolKind.shortlist => 'Remove this profile from your shortlist?',
@@ -206,10 +213,11 @@ class _UserToolsScreenState extends State<UserToolsScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: const BorderSide(color: AppPalette.border)),
       child: ListTile(
-        onTap: widget.kind == UserToolKind.shortlist ? () => _viewShortlistedProfile(item) : null,
+        onTap: widget.kind == UserToolKind.shortlist ? () => _viewShortlistedProfile(item) : widget.kind == UserToolKind.notifications && item['isRead'] != true ? () => _action(item) : null,
         leading: CircleAvatar(backgroundColor: AppPalette.champagne, child: Icon(icon, color: AppPalette.maroon)),
         title: Text(title.isEmpty ? 'VedicVivah member' : title, style: const TextStyle(color: AppPalette.darkMaroon, fontWeight: FontWeight.w600)),
-        subtitle: Text([detail, date].where((e) => e.isNotEmpty).join('\n')),
+        subtitle: Text([detail, date].where((e) => e.isNotEmpty).join('
+')),
         trailing: canAct ? IconButton(
           onPressed: _working ? null : () => _action(item),
           icon: Icon(widget.kind == UserToolKind.notifications ? Icons.done : Icons.close, color: AppPalette.maroon),
