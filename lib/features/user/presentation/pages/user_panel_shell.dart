@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/storage/session_store.dart';
 import '../../../auth/data/models/auth_models.dart';
 import 'dashboard/user_dashboard_screen.dart';
 import 'user_tools_screen.dart';
@@ -38,6 +39,7 @@ class _UserPanelShellState extends State<UserPanelShell> {
       if(mounted)setState(()=>_pendingPolicies=pending);
       if(pending.isEmpty)await _loadAccountAccess();
     } catch(e) {
+      if(SessionStore.instance.current==null){await widget.onSignOut();return;}
       if(mounted)setState(()=>_policyError=e.toString().replaceFirst('ApiException: ',''));
     } finally { if(mounted)setState(()=>_policyLoading=false); }
   }
@@ -50,6 +52,7 @@ class _UserPanelShellState extends State<UserPanelShell> {
       _safeGet('/user-profile'),
     ]);
     final subscription=results[0],profile=results[1];
+    if(SessionStore.instance.current==null){await widget.onSignOut();return;}
     if(!mounted)return;
     setState((){
       if(subscription!=null){final data=subscription['data'];_subscriptionExpired=data==null||(data is Map&&data['isExpired']==true);}
