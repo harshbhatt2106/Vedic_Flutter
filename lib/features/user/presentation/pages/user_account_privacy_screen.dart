@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/storage/session_store.dart';
+import '../../../auth/data/models/auth_models.dart';
 
 class UserAccountPrivacyScreen extends StatefulWidget {
   const UserAccountPrivacyScreen({super.key,required this.apiClient,required this.onSignOut});
@@ -49,7 +51,11 @@ class _AccountSettingsTabState extends State<_AccountSettingsTab>{
       const Text('Username',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
       field('Username',username),
       action('Check availability',()=>run(()async{final r=await widget.api.get('/account/username-availability?username='+Uri.encodeQueryComponent(username.text.trim()),authenticated:true);final d=r['data'];setState(()=>notice=d is Map&&d['available']==true?'Username is available.':'Username is not available.');})),
-      action('Update username',()=>run(()async{final value=username.text.trim();if(!RegExp(r'^[a-zA-Z0-9._]{3,30}$').hasMatch(value))throw Exception('Use 3–30 letters, numbers, dots or underscores.');await widget.api.put('/account/username',body:{'username':value},authenticated:true);setState(()=>notice='Username updated.');})),
+      action('Update username',()=>run(()async{final value=username.text.trim();if(!RegExp(r'^[a-zA-Z0-9._]{3,30}$').hasMatch(value))throw Exception('Use 3–30 letters, numbers, dots or underscores.');final r=await widget.api.put('/account/username',body:{'username':value},authenticated:true);
+        final updated=(r['data'] is Map?(r['data'] as Map)['username']?.toString():null)??value;
+        final session=SessionStore.instance.current;
+        if(session!=null){await SessionStore.instance.update(AuthSession(userId:session.userId,userName:updated,role:session.role,accessToken:session.accessToken,expiresAtUtc:session.expiresAtUtc,refreshToken:session.refreshToken,refreshTokenExpiresAtUtc:session.refreshTokenExpiresAtUtc));}
+        setState(() { username.text=updated; notice='Username updated.'; });})),
     ])),
     panel(Column(children:[
       const Text('Change email',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
