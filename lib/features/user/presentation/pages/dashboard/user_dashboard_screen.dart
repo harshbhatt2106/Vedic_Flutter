@@ -86,10 +86,10 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  ]));
  Widget _stat(String title,int value,IconData icon,VoidCallback onTap)=>InkWell(onTap:onTap,borderRadius:BorderRadius.circular(17),child:_panel(Column(children:[Icon(icon,color:AppPalette.gold,size:20),const SizedBox(height:7),Text(value.toString(),style:const TextStyle(color:AppPalette.darkMaroon,fontSize:20,fontWeight:FontWeight.w700)),const SizedBox(height:4),Text(title,textAlign:TextAlign.center,style:const TextStyle(color:AppPalette.secondary,fontSize:9,fontWeight:FontWeight.w700,letterSpacing:.3,fontFamily:'sans-serif'))]),padding:const EdgeInsets.symmetric(vertical:13,horizontal:5)));
  Widget _quickActions()=>_panel(Wrap(spacing:8,runSpacing:8,children:[
-  OutlinedButton.icon(onPressed:()=>widget.onNavigate(6),icon:const Icon(Icons.search),label:const Text('Find matches')),
-  OutlinedButton.icon(onPressed:()=>widget.onNavigate(6),icon:const Icon(Icons.person_outline),label:const Text('Edit biodata')),
+  OutlinedButton.icon(onPressed:()=>widget.onNavigate(10),icon:const Icon(Icons.search),label:const Text('Find matches')),
+  OutlinedButton.icon(onPressed:()=>widget.onNavigate(11),icon:const Icon(Icons.person_outline),label:const Text('Edit biodata')),
   OutlinedButton.icon(onPressed:()=>widget.onNavigate(5),icon:const Icon(Icons.favorite_outline),label:const Text('Interests')),
-  OutlinedButton.icon(onPressed:()=>widget.onNavigate(6),icon:const Icon(Icons.chat_bubble_outline),label:const Text('Messages')),
+  OutlinedButton.icon(onPressed:()=>widget.onNavigate(14),icon:const Icon(Icons.chat_bubble_outline),label:const Text('Messages')),
  ]));
  Widget _heading(String title,String sub)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(color:AppPalette.darkMaroon,fontSize:21,fontWeight:FontWeight.w600)),Text(sub,style:const TextStyle(color:AppPalette.secondary,fontSize:12,fontFamily:'sans-serif'))]);
  Widget _notificationsCard(){if(_notifications.isEmpty)return _empty('You are all caught up. New updates will appear here.');return _panel(Column(children:_notifications.take(4).map((raw){final x=raw as Map<String,dynamic>;return ListTile(dense:true,leading:Icon(x['isRead']==true?Icons.notifications_none:Icons.notifications_active_outlined,color:AppPalette.gold),title:Text(x['title']?.toString()??'Update',style:const TextStyle(fontSize:13,color:AppPalette.ink,fontWeight:FontWeight.w600)),subtitle:Text(x['message']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:11,color:AppPalette.secondary)),trailing:Text(_ago(x['createdAtUtc']),style:const TextStyle(fontSize:10,color:AppPalette.secondary)));}).toList()));}
