@@ -113,7 +113,7 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
   }
 
   void _onSearch(String value) {
-    _search = value;
+    setState(() => _search = value);
     _searchTimer?.cancel();
     _searchTimer = Timer(const Duration(milliseconds: 400), () {
       if (!mounted) return;
@@ -126,10 +126,10 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
     setState(() {
       _page = 1;
       switch (kind) {
-        case 'role': _role = value;
-        case 'status': _status = value;
-        case 'gender': _gender = value;
-        case 'completion': _completion = value;
+        case 'role': _role = value; break;
+        case 'status': _status = value; break;
+        case 'gender': _gender = value; break;
+        case 'completion': _completion = value; break;
       }
     });
     _load();
