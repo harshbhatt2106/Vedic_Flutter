@@ -73,7 +73,7 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
     ));
   }
   Future<void> fetchOptions(String key,String path)async{
-    try{final r=await widget.apiClient.get(path,authenticated:true);final d=r['data'];options[key]=d is List?d.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];}catch(_){options[key]=[];}
+    try{final r=await widget.apiClient.get(path,authenticated:true);final d=r['data'];options[key]=d is List?d.whereType<Map>().map((raw){final x=Map<String,dynamic>.from(raw);if(path.contains('/locations/countries'))return {'id':x['countryId'],'name':x['countryName']};if(path.contains('/locations/states'))return {'id':x['stateId'],'name':x['stateName']};if(path.contains('/locations/cities'))return {'id':x['cityId'],'name':x['cityName']};return x;}).toList():[];}catch(_){options[key]=[];}
   }
   Future<void> changeOption(String key,int? value)async{
     fields[key]!.text=value?.toString()??'';
