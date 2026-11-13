@@ -1,14 +1,17 @@
 class AppConfig {
   AppConfig._();
 
-  /// Pass the backend API root at build time, including the /api suffix.
-  /// Example: --dart-define=API_BASE_URL=https://api.example.com/api
-  static const String apiBaseUrl = String.fromEnvironment('API_BASE_URL');
+  /// Production API root, matching the VedicVivah MAUI app.
+  /// Can be overridden at build time with --dart-define=API_BASE_URL=...
+  static const String apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://vedicvivah.co.in/api',
+  );
 
   static Uri endpoint(String path) {
     if (apiBaseUrl.trim().isEmpty) {
       throw const ApiConfigurationException(
-        'The API address is not configured. Build with --dart-define=API_BASE_URL=https://your-host/api.',
+        'The API address is not configured. Build with --dart-define=API_BASE_URL=https://vedicvivah.co.in/api.',
       );
     }
 
