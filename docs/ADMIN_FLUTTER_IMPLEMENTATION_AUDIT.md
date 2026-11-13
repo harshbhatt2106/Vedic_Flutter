@@ -15,7 +15,7 @@ React route source: src/routes/AppRoutes.tsx. Admin navigation source: src/layou
 
 | # | Web route / page | Features, inputs and actions found | Backend API contract | Flutter status |
 |---:|---|---|---|---|
-| 1 | /admin/dashboard — AdminDashboardPage | KPI cards; 14-day signup series; pending profile preview; recent activity; pending email-change list; approve/reject email change; shortcuts to members, reviews, mentors and activity | GET /api/admin/dashboard; GET /api/admin/profiles/pending; GET /api/admin/activities?take=6; GET /api/admin/email-changes/pending; POST /api/admin/email-changes/{userId}/approve; POST /api/admin/email-changes/{userId}/reject | [ ] Not implemented |
+| 1 | /admin/dashboard — AdminDashboardPage | KPI cards; 14-day signup series; pending profile preview; recent activity; pending email-change list; approve/reject email change; shortcuts to members, reviews, mentors and activity | GET /api/admin/dashboard; GET /api/admin/profiles/pending; GET /api/admin/activities?take=6; GET /api/admin/email-changes/pending; POST /api/admin/email-changes/{userId}/approve; POST /api/admin/email-changes/{userId}/reject | [~] Implemented; CI/device verification pending |
 | 2 | /admin/pending-requests — PendingRequestsPage | Pending/Approved/Rejected tabs; search by name/username; submitted-from/to date filters; clear filters; counts; profile detail; photo content; approve; reject with reason; refresh/retry/loading/error/empty states | GET /api/admin/dashboard; GET /api/admin/profiles/pending?status=&search=&fromDate=&toDate=; GET /api/admin/profiles/{profileId}; GET /api/admin/profiles/{profileId}/photos/{photoId}/content; PUT /api/admin/profiles/{profileId}/approve; PUT /api/admin/profiles/{profileId}/reject | [ ] Not implemented |
 | 3 | /admin/users — UsersPage | Paginated members; search; role/gender/profile-completion/active/city filters; profile detail and primary photo; activate/deactivate with confirmation; assign/remove mentor; delete with confirmation; retry/error/empty states | GET /api/admin/users?page=&pageSize=&search=&role=&gender=&isProfileComplete=&isActive=&city=; GET /api/admin/profiles/{profileId}; GET /api/admin/users/{userId}/primary-photo; GET /api/admin/users?role=Mentor&pageSize=500; POST /api/admin/user-mentor-assignments; DELETE /api/admin/user-mentor-assignments/{userId}/{mentorUserId}; PUT /api/admin/users/{userId}/activate; PUT /api/admin/users/{userId}/deactivate; DELETE /api/admin/users/{userId} | [ ] Not implemented |
 | 4 | /admin/activities — ActivitiesPage | Up to 100 audit entries; client-side text search; activity type/action/entity filters; All/Today/Last 7 Days/Last 30 Days date presets; refresh; row opens detail panel | GET /api/admin/activities?take=100; backend normalizes invalid take to 100 and supports up to 500 | [ ] Not implemented |
@@ -93,7 +93,7 @@ Persistence entity names present in the audited backend branch include User, Use
 - [ ] Add Admin DTO parsing and reusable loading/error/empty/retry states.
 
 ### Screens
-- [ ] Dashboard — live KPIs, signup series, pending profiles, audit activity and email-change actions.
+- [~] Dashboard — live KPIs, signup series, pending profiles, audit activity and email-change actions; implementation pushed, awaiting CI and live Admin-session/device verification.
 - [ ] Profile Reviews — status tabs, search/date filters, detail/photos, approve/reject validation.
 - [ ] Members — pagination/search/filters, detail/photo, mentor assignment, activate/deactivate/delete confirmation.
 - [ ] Activity Log — search, filters, date presets and detail view.
@@ -125,5 +125,5 @@ Persistence entity names present in the audited backend branch include User, Use
 **React Admin route/sidebar inventory:** first pass completed.  
 **Backend Admin route/authorization inventory:** first pass completed for AdminController, LocationController, ReferenceDataController, SubscriptionPlansController, PrivacyPolicyController, ReportsController and MentorController.  
 **Field-by-field DTO, validation, business-rule and EF relationship audit:** in progress; this file does not claim that every rule has been reviewed.  
-**Flutter Admin implementation at baseline:** not started.  
-**Features marked complete:** none.
+**Flutter Admin implementation:** in progress; Admin shell and first dashboard screen are pushed, but CI/device and live API verification are pending.  
+**Features marked complete:** none. Dashboard and navigation are in progress, not verified complete.
