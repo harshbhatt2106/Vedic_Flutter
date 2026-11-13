@@ -17,7 +17,7 @@ class ChatRealtimeService {
     final options=HttpConnectionOptions(accessTokenFactory:() async=>SessionStore.instance.current?.accessToken??'');
     final connection=HubConnectionBuilder()
       .withUrl(url,options:options)
-      .withAutomaticReconnect(retryDelays:<int?>[2000,5000,10000,20000,null])
+      .withAutomaticReconnect(retryDelays:<int>[2000,5000,10000,20000])
       .build();
     connection.on('ReceiveMessage',(arguments){
       if(arguments==null||arguments.isEmpty||arguments.first is! Map)return;
