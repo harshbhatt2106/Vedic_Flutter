@@ -11,7 +11,7 @@ class UserDashboardScreen extends StatefulWidget {
 }
 class _UserDashboardScreenState extends State<UserDashboardScreen>{
  bool _loading=true; String? _error; Map<String,dynamic>? _profile;
- List<dynamic> _photos=[],_shortlist=[],_notifications=[],_stories=[]; int _referenceCount=0,_matchCount=0; Uint8List? _primaryPhotoBytes;
+ List<dynamic> _photos=[],_shortlist=[],_notifications=[],_stories=[]; int _referenceCount=0,_matchCount=0,_unreadCount=0; Uint8List? _primaryPhotoBytes;
  @override void initState(){super.initState();_load();}
  Future<void> _load() async{
  setState((){_loading=true;_error=null;});
@@ -23,6 +23,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
   widget.apiClient.get('/notifications?take=4',authenticated:true).catchError((_)=> <String,dynamic>{'data':<dynamic>[]}),
   widget.apiClient.get('/user-references',authenticated:true).catchError((_)=> <String,dynamic>{'data':<dynamic>[]}),
   widget.apiClient.get('/public/success-stories').catchError((_)=> <String,dynamic>{'data':<dynamic>[]}),
+  widget.apiClient.get('/notifications/unread-count',authenticated:true).catchError((_)=> <String,dynamic>{'data':0}),
  ]);
  if(!mounted)return;
  _profile=r[0]['data'] is Map<String,dynamic>?r[0]['data'] as Map<String,dynamic>:null;
@@ -31,6 +32,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  _notifications=r[3]['data'] is List?r[3]['data'] as List:[];
  _referenceCount=r[4]['data'] is List?(r[4]['data'] as List).length:0;
  _stories=r[5]['data'] is List?r[5]['data'] as List:[];
+ _unreadCount=(r[6]['data'] as num?)?.toInt()??0;
  final primary=_photos.whereType<Map>().cast<Map>().where((x)=>x['isPrimary']==true).firstOrNull??(_photos.isNotEmpty?_photos.first:null);
  if(primary is Map&&primary['id']!=null){try{_primaryPhotoBytes=await widget.apiClient.getBytes('/user-profile/photos/${primary['id']}/content',authenticated:true);}catch(_){_primaryPhotoBytes=null;}}
  _stories.sort((a,b)=>DateTime.tryParse(b is Map?(b['marriedOn']??'').toString():'')?.compareTo(DateTime.tryParse(a is Map?(a['marriedOn']??'').toString():'')??DateTime(1900))??0);
@@ -54,7 +56,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  String get _greeting{final h=DateTime.now().hour;return h<12?'GOOD MORNING':h<17?'GOOD AFTERNOON':'GOOD EVENING';}
  String _ago(dynamic raw){final d=DateTime.tryParse(raw?.toString()??'');if(d==null)return '';final m=DateTime.now().difference(d.toLocal()).inMinutes;if(m<1)return 'Just now';if(m<60)return '$m m ago';final h=(m/60).round();if(h<24)return '$h h ago';return '${(h/24).round()}d ago';}
  @override Widget build(BuildContext context){
- final p=_profile;final done=_done;final percent=done*10;final unread=_notifications.where((x)=>x is Map&&x['isRead']!=true).length;
+ final p=_profile;final done=_done;final percent=done*10;final unread=_unreadCount;
  return Scaffold(backgroundColor:AppPalette.background,appBar:AppBar(backgroundColor:AppPalette.background,elevation:0,title:const Text('VEDICVIVAH',style:TextStyle(color:AppPalette.darkMaroon,letterSpacing:2,fontSize:15,fontWeight:FontWeight.w700)),actions:[
  IconButton(onPressed:_load,icon:const Icon(Icons.refresh_rounded,color:AppPalette.maroon)),
  IconButton(onPressed:widget.onSignOut,icon:const Icon(Icons.logout_rounded,color:AppPalette.maroon)),
