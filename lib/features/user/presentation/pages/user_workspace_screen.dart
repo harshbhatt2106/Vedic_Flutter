@@ -91,6 +91,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     } catch(ex){error=ex.toString().replaceFirst('ApiException: ','');}
     finally{if(mounted)setState(()=>loading=false);}
   }
+  Future<void> refresh() async { if(widget.kind=='discover'){discoverPage=1;} await load(); }
   Future<void> run(Future<void> Function() action) async {
     setState(() { working=true; error=null; notice=null; });
     try{await action();}
@@ -105,7 +106,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   Widget get alerts=>Column(children:[if(error!=null)panel(Text(error!,style:const TextStyle(color:AppPalette.error))),if(notice!=null)panel(Text(notice!,style:const TextStyle(color:AppPalette.maroon)))]);
   @override Widget build(BuildContext context){
     if(loading)return const Center(child:CircularProgressIndicator(color:AppPalette.maroon));
-    return RefreshIndicator(color:AppPalette.maroon,onRefresh:load,child:ListView(padding:const EdgeInsets.all(15),children:[
+    return RefreshIndicator(color:AppPalette.maroon,onRefresh:refresh,child:ListView(padding:const EdgeInsets.all(15),children:[
       Text(title,style:const TextStyle(fontSize:22,color:AppPalette.darkMaroon)),const SizedBox(height:9),alerts,
       if(widget.kind=='discover')...discover(),
       if(widget.kind=='profile')...profile(),
