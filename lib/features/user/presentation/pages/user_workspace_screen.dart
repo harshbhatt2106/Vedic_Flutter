@@ -44,7 +44,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   @override void dispose(){for(final x in [a,b,c,d,e]){x.dispose();}super.dispose();}
   String get title=>switch(widget.kind){'discover'=>'Find matches','profile'=>'Your biodata','preferences'=>'Partner preferences','messages'=>'Messages','support'=>'Help & support',_=>'Membership plans'};
   Future<void> load() async {
-    setState(()=>{loading=true,error=null});
+    setState(() { loading=true; error=null; });
     try {
       if(widget.kind=='discover'){
         final query=Uri(queryParameters:{if(a.text.trim().isNotEmpty)'search':a.text.trim(),if(b.text.trim().isNotEmpty)'minAge':b.text.trim(),if(c.text.trim().isNotEmpty)'maxAge':c.text.trim(),if(d.text.trim().isNotEmpty)'religionId':d.text.trim(),if(e.text.trim().isNotEmpty)'casteId':e.text.trim(),'pageNumber':'1','pageSize':'20'}).query;\n        final r=await widget.api.get('/user-profile/discover?'+query,authenticated:true);
@@ -71,7 +71,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     finally{if(mounted)setState(()=>loading=false);}
   }
   Future<void> run(Future<void> Function() action) async {
-    setState(()=>{working=true,error=null,notice=null});
+    setState(() { working=true; error=null; notice=null; });
     try{await action();}
     catch(ex){if(mounted)setState(()=>error=ex.toString().replaceFirst('ApiException: ',''));}
     finally{if(mounted)setState(()=>working=false);}
