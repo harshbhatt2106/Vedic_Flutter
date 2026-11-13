@@ -18,6 +18,10 @@ jobs:
         with:
           flutter-version: '3.41.5'
           cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - name: Resolve Flutter dependencies
         run: flutter pub get
       - name: Inspect Flutter toolchain
@@ -68,10 +72,6 @@ jobs:
             git commit -m "build(android): add Flutter Android runner"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
       - name: Build Android debug APK
         run: flutter build apk --debug
       - name: Upload debug APK
