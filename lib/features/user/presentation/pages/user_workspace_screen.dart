@@ -45,7 +45,7 @@ class _WorkspaceTab extends StatefulWidget {
 }
 class _WorkspaceTabState extends State<_WorkspaceTab> {
   bool loading=true,working=false; String? error,notice;
-  List<Map<String,dynamic>> items=[]; Map<String,dynamic> data={};
+  List<Map<String,dynamic>> items=[]; List<Map<String,dynamic>> connections=[]; Map<String,dynamic> data={};
   final a=TextEditingController(),b=TextEditingController(),c=TextEditingController(),d=TextEditingController(),e=TextEditingController();
   final Map<String,TextEditingController> prefFields={for(final k in ['minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','religionId','casteId','subCasteId','motherTongue','educationFieldId','courseId','qualificationId','occupationId','professionId','workType','minYearlyIncome','maxYearlyIncome','countryId','stateId','cityId'])k:TextEditingController()};
   final Map<String,TextEditingController> filters={for(final k in ['subCasteId','preferredGender','maritalStatus','motherTongue','education','profession','minYearlyIncome','maxYearlyIncome','minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','countryId','stateId','cityId','educationFieldId','courseId','qualificationId','occupationId','professionId','workType'])k:TextEditingController()};
@@ -231,8 +231,12 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     ])),
     panel(const Text('Existing advanced community, career, height and location preference values are retained when saving this form.',style:TextStyle(color:AppPalette.secondary,fontSize:12))),
   ];
+  Future<void> searchConnections()async{if(b.text.trim().isEmpty){setState(()=>connections=[]);return;}try{final r=await widget.api.get('/interests/connections/search?q='+Uri.encodeQueryComponent(b.text.trim()),authenticated:true);final d=r['data'];setState(()=>connections=d is List?d.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[]);}catch(e){setState(()=>error=e.toString());}}
+  Future<void> startChat(Map<String,dynamic> user)async{final userId=(user['userId']??'').toString();if(userId.isEmpty)return;await run(()async{await widget.api.post('/conversations/$userId',body:{},authenticated:true);await load();});}
   List<Widget> messages()=>[
     field('Search conversations',a),
+    panel(Column(children:[field('Search accepted connections',b),button('Find connections',searchConnections)])),
+    ...connections.map((u)=>panel(ListTile(title:Text('${u['firstName']??''} ${u['lastName']??''}'),subtitle:Text([u['profession'],u['cityName']].where((x)=>x!=null&&x.toString().isNotEmpty).join(' · ')),trailing:TextButton(onPressed:working?null:()=>startChat(u),child:const Text('Message'))))),
     if(items.where((c)=>(c['otherUserName']??'').toString().toLowerCase().contains(a.text.toLowerCase())).isEmpty)panel(const Text('No conversations found.')),
     ...items.where((c)=>(c['otherUserName']??'').toString().toLowerCase().contains(a.text.toLowerCase())).map((c)=>panel(ListTile(onTap:()=>openConversation(c),leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(c['otherUserName']?.toString()??'Member'),subtitle:Text(c['lastMessage']?.toString()??''),trailing:PopupMenuButton<String>(onSelected:(v)=>deleteConversation(c['id'].toString()),itemBuilder:(_)=>const [PopupMenuItem(value:'delete',child:Text('Delete conversation'))])))),
   ];
