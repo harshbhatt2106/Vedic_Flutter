@@ -10,10 +10,11 @@ import 'user_profile_editor_screen.dart';
 import '../../data/chat_realtime_service.dart';
 
 class UserWorkspaceScreen extends StatefulWidget {
-  const UserWorkspaceScreen({super.key, required this.apiClient, this.initialTab = 0, this.subscriptionExpired = false, this.approvalRestricted = false, this.onSubscriptionCheck, required this.onOpenMenu});
+  const UserWorkspaceScreen({super.key, required this.apiClient, this.initialTab = 0, this.subscriptionExpired = false, this.approvalRestricted = false, this.onSubscriptionCheck, required this.onOpenMenu, this.onWorkspaceTabChanged});
   final ApiClient apiClient;
   final int initialTab;
   final VoidCallback onOpenMenu;
+  final ValueChanged<int>? onWorkspaceTabChanged;
   final bool subscriptionExpired,approvalRestricted;
   final VoidCallback? onSubscriptionCheck;
   @override
@@ -22,7 +23,7 @@ class UserWorkspaceScreen extends StatefulWidget {
 class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTickerProviderStateMixin {
   late final TabController tabs;
   @override void initState(){super.initState();tabs=TabController(length:9,initialIndex:widget.initialTab.clamp(0,8).toInt(),vsync:this)..addListener(_handleTabChange);}
-  void _handleTabChange(){if(!tabs.indexIsChanging&&tabs.index==6)widget.onSubscriptionCheck?.call();}
+  void _handleTabChange(){if(tabs.indexIsChanging)return;widget.onWorkspaceTabChanged?.call(tabs.index);if(tabs.index==6)widget.onSubscriptionCheck?.call();}
   @override void didUpdateWidget(covariant UserWorkspaceScreen oldWidget){super.didUpdateWidget(oldWidget);if(oldWidget.initialTab!=widget.initialTab)tabs.animateTo(widget.initialTab.clamp(0,8).toInt());}
   @override void dispose(){tabs.removeListener(_handleTabChange);tabs.dispose();super.dispose();}
   Widget _tab(String kind,Widget child){
