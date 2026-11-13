@@ -24,6 +24,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
   widget.apiClient.get('/user-references',authenticated:true).catchError((_)=> <String,dynamic>{'data':<dynamic>[]}),
   widget.apiClient.get('/public/success-stories').catchError((_)=> <String,dynamic>{'data':<dynamic>[]}),
   widget.apiClient.get('/notifications/unread-count',authenticated:true).catchError((_)=> <String,dynamic>{'data':0}),
+  widget.apiClient.get('/partner-preferences',authenticated:true).catchError((_)=> <String,dynamic>{'data':null}),
  ]);
  if(!mounted)return;
  _profile=r[0]['data'] is Map<String,dynamic>?r[0]['data'] as Map<String,dynamic>:null;
@@ -33,6 +34,31 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  _referenceCount=r[4]['data'] is List?(r[4]['data'] as List).length:0;
  _stories=r[5]['data'] is List?r[5]['data'] as List:[];
  _unreadCount=(r[6]['data'] as num?)?.toInt()??0;
+ // Match count must come from the same discovery endpoint used by Find Matches.
+ // Reuse the user's saved preference groups rather than showing a permanent zero.
+ try {
+   final rawPreference=r[7]['data'];
+   final preference=rawPreference is Map?Map<String,dynamic>.from(rawPreference):<String,dynamic>{};
+   final params=<String,String>{'pageNumber':'1','pageSize':'1'};
+   void addValue(String key,dynamic value){if(value!=null&&value.toString().trim().isNotEmpty)params[key]=value.toString();}
+   addValue('preferredGender',preference['preferredGender']);
+   addValue('maritalStatus',preference['maritalStatus']);
+   final age=preference['age'];
+   if(age is Map){addValue('minAge',age['minAge']);addValue('maxAge',age['maxAge']);}
+   final height=preference['height'];
+   if(height is Map){addValue('minHeightFeet',height['minFeet']);addValue('minHeightInches',height['minInches']);addValue('maxHeightFeet',height['maxFeet']);addValue('maxHeightInches',height['maxInches']);}
+   final community=preference['community'];
+   if(community is Map){for(final key in ['religionId','casteId','subCasteId','motherTongue']){addValue(key,community[key]);}}
+   final career=preference['career'];
+   if(career is Map){for(final key in ['educationFieldId','courseId','qualificationId','occupationId','professionId','workType','minYearlyIncome','maxYearlyIncome']){addValue(key,career[key]);}}
+   final location=preference['location'];
+   if(location is Map){for(final key in ['countryId','stateId','cityId']){addValue(key,location[key]);}}
+   final matches=await widget.apiClient.get('/user-profile/discover?${Uri(queryParameters:params).query}',authenticated:true);
+   final page=matches['data'];
+   if(page is Map)_matchCount=(page['totalCount'] as num?)?.toInt()??0;
+ } catch (_) {
+   _matchCount=0;
+ }
  final primary=_photos.whereType<Map>().cast<Map>().where((x)=>x['isPrimary']==true).firstOrNull??(_photos.isNotEmpty?_photos.first:null);
  if(primary is Map&&primary['id']!=null){try{_primaryPhotoBytes=await widget.apiClient.getBytes('/user-profile/photos/${primary['id']}/content',authenticated:true);}catch(_){_primaryPhotoBytes=null;}}
  _stories.sort((a,b)=>DateTime.tryParse(b is Map?(b['marriedOn']??'').toString():'')?.compareTo(DateTime.tryParse(a is Map?(a['marriedOn']??'').toString():'')??DateTime(1900))??0);
