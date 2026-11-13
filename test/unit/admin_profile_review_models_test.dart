@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vedic_vivah/features/admin/data/models/admin_profile_review_models.dart';
+import 'package:vedicvivah_mobile/features/admin/data/models/admin_profile_review_models.dart';
 
 void main() {
   group('AdminQueueProfile', () {
