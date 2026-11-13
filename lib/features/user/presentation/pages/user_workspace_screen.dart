@@ -48,6 +48,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   bool loading=true,working=false; String? error,notice;
   List<Map<String,dynamic>> items=[]; List<Map<String,dynamic>> connections=[]; Map<String,dynamic> data={};
   final a=TextEditingController(),b=TextEditingController(),c=TextEditingController(),d=TextEditingController(),e=TextEditingController();
+  final Map<String,List<Map<String,dynamic>>> prefOptions={};
   final Map<String,TextEditingController> prefFields={for(final k in ['minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','religionId','casteId','subCasteId','motherTongue','educationFieldId','courseId','qualificationId','occupationId','professionId','workType','minYearlyIncome','maxYearlyIncome','countryId','stateId','cityId'])k:TextEditingController()};
   final Map<String,TextEditingController> filters={for(final k in ['subCasteId','preferredGender','maritalStatus','motherTongue','education','profession','minYearlyIncome','maxYearlyIncome','minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','countryId','stateId','cityId','educationFieldId','courseId','qualificationId','occupationId','professionId','workType'])k:TextEditingController()};
   int discoverPage=1,totalPages=1;
@@ -75,7 +76,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         final r=await widget.api.get('/partner-preferences',authenticated:true); final raw=r['data'];
         if(raw is Map){data=Map<String,dynamic>.from(raw);choice=data['preferredGender']?.toString()??choice;marital=data['maritalStatus']?.toString()??marital;final age=data['age'];if(age is Map){a.text=age['minAge']?.toString()??'';b.text=age['maxAge']?.toString()??'';}
           c.text=data['additionalRequirements']?.toString()??'';
-          for(final group in ['height','community','career','location']){final value=data[group];if(value is Map){for(final entry in value.entries){if(prefFields.containsKey(entry.key))prefFields[entry.key]!.text=entry.value?.toString()??'';}}}}
+          for(final group in ['height','community','career','location']){final value=data[group];if(value is Map){for(final entry in value.entries){if(prefFields.containsKey(entry.key))prefFields[entry.key]!.text=entry.value?.toString()??'';}}await _loadPreferenceOptions();}}
       } else if(widget.kind=='messages'){
         final r=await widget.api.get('/conversations',authenticated:true);final raw=r['data'];
         items=raw is List?raw.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];
@@ -198,7 +199,34 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
       button('Submit for review',()=>run(()async{await widget.api.post('/user-profile/submit-for-review',body:{},authenticated:true);setState(()=>notice='Profile submitted for review.');await load();})),
     ])),
   ];
-  Widget prefField(String label,String key)=>Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:prefFields[key],keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:InputDecoration(labelText:label,filled:true)));
+  Widget prefField(String label,String key){
+    const ids={'religionId','casteId','subCasteId','educationFieldId','courseId','qualificationId','occupationId','professionId','countryId','stateId','cityId'};
+    if(!ids.contains(key))return Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:prefFields[key],keyboardType:key.contains('Income')?const TextInputType.numberWithOptions(decimal:true):TextInputType.text,decoration:InputDecoration(labelText:label,filled:true)));
+    final list=prefOptions[key]??const <Map<String,dynamic>>[];final current=int.tryParse(prefFields[key]!.text);final value=list.any((x)=>(x['id'] as num?)?.toInt()==current)?current:null;
+    return Padding(padding:const EdgeInsets.only(bottom:8),child:DropdownButtonFormField<int>(initialValue:value,isExpanded:true,decoration:InputDecoration(labelText:label,filled:true),items:list.map((x)=>DropdownMenuItem<int>(value:(x['id'] as num).toInt(),child:Text(x['name'].toString(),overflow:TextOverflow.ellipsis))).toList(),onChanged:(v)=>_changePreferenceOption(key,v)));
+  }
+  Future<void> _fetchPrefOptions(String key,String path)async{
+    try{final r=await widget.api.get(path,authenticated:true);final d=r['data'];prefOptions[key]=d is List?d.whereType<Map>().map((raw){final x=Map<String,dynamic>.from(raw);if(path.contains('/locations/countries'))return {'id':x['countryId'],'name':x['countryName']};if(path.contains('/locations/states'))return {'id':x['stateId'],'name':x['stateName']};if(path.contains('/locations/cities'))return {'id':x['cityId'],'name':x['cityName']};return x;}).toList():[];}catch(_){prefOptions[key]=[];}
+  }
+  Future<void> _loadPreferenceOptions()async{
+    final base=<String,String>{'religionId':'/reference-data/religions','qualificationId':'/reference-data/qualifications','educationFieldId':'/reference-data/education-fields','occupationId':'/reference-data/occupations','countryId':'/locations/countries'};
+    for(final e in base.entries){await _fetchPrefOptions(e.key,e.value);}
+    final religion=int.tryParse(prefFields['religionId']!.text),caste=int.tryParse(prefFields['casteId']!.text),education=int.tryParse(prefFields['educationFieldId']!.text),occupation=int.tryParse(prefFields['occupationId']!.text),country=int.tryParse(prefFields['countryId']!.text),state=int.tryParse(prefFields['stateId']!.text);
+    if(religion!=null)await _fetchPrefOptions('casteId','/reference-data/castes?religionId=$religion');
+    if(caste!=null)await _fetchPrefOptions('subCasteId','/reference-data/sub-castes?casteId=$caste');
+    if(education!=null)await _fetchPrefOptions('courseId','/reference-data/courses?educationFieldId=$education');
+    if(occupation!=null)await _fetchPrefOptions('professionId','/reference-data/professions?occupationId=$occupation');
+    if(country!=null)await _fetchPrefOptions('stateId','/locations/states?countryId=$country');
+    if(state!=null)await _fetchPrefOptions('cityId','/locations/cities?stateId=$state');
+  }
+  Future<void> _changePreferenceOption(String key,int? value)async{
+    prefFields[key]!.text=value?.toString()??'';
+    const clearChildren={'religionId':['casteId','subCasteId'],'casteId':['subCasteId'],'educationFieldId':['courseId'],'occupationId':['professionId'],'countryId':['stateId','cityId'],'stateId':['cityId']};
+    for(final child in clearChildren[key]??const <String>[])prefFields[child]!.clear();
+    final next=<String,String>{'religionId':'casteId','casteId':'subCasteId','educationFieldId':'courseId','occupationId':'professionId','countryId':'stateId','stateId':'cityId'};
+    final child=next[key];if(child!=null&&value!=null){final route=switch(key){'religionId'=>'/reference-data/castes?religionId=$value','casteId'=>'/reference-data/sub-castes?casteId=$value','educationFieldId'=>'/reference-data/courses?educationFieldId=$value','occupationId'=>'/reference-data/professions?occupationId=$value','countryId'=>'/locations/states?countryId=$value',_=>'/locations/cities?stateId=$value'};await _fetchPrefOptions(child,route);}
+    if(mounted)setState((){});
+  }
   List<Widget> preferences()=>[
     panel(Column(children:[
       DropdownButtonFormField<String>(value:choice,decoration:const InputDecoration(labelText:'Preferred gender'),items:['Female','Male','Any'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(x)=>setState(()=>choice=x??choice)),
