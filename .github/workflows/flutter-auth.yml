@@ -18,4 +18,5 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
+      - run: flutter create --platforms=android --no-pub .
       - run: flutter build apk --debug
