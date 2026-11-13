@@ -85,7 +85,7 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
   }
   Future<void> changeOption(String key,int? value)async{
     fields[key]!.text=value?.toString()??'';
-    const nameFields=<String,String>{'motherTongueId':'motherTongue','qualificationId':'qualification','educationFieldId':'education','courseId':'course','occupationId':'occupation','professionId':'profession'};
+    const nameFields=<String,String>{'motherTongueId':'motherTongue','birthCityId':'birthPlace','qualificationId':'qualification','educationFieldId':'education','courseId':'course','occupationId':'occupation','professionId':'profession'};
     final nameKey=nameFields[key];
     if(nameKey!=null){String? selectedName;for(final option in options[key]??[]){if((option['id'] as num?)?.toInt()==value){selectedName=option['name']?.toString();break;}}fields[nameKey]!.text=selectedName??'';}
     final dependencies=<String,Map<String,String>>{
