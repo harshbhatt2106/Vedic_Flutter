@@ -130,10 +130,10 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         filterField('Education field ID','educationFieldId',numeric:true),filterField('Course ID','courseId',numeric:true),filterField('Qualification ID','qualificationId',numeric:true),
         filterField('Occupation ID','occupationId',numeric:true),filterField('Profession ID','professionId',numeric:true),filterField('Work type','workType'),
       ]),
-      button('Apply filters',()=>{discoverPage=1;return load();}),
+      button('Apply filters',(){ discoverPage=1; load(); }),
     ])),
     if(items.isEmpty)panel(const Text('No profiles found. Complete your profile and try again.')),
-    if(discoverPage<totalPages)button('Load more profiles',()=>{discoverPage++;return load();}),
+    if(discoverPage<totalPages)button('Load more profiles',(){ discoverPage++; load(); }),
     ...items.map((p){final id=(p['userId']??p['id']??'').toString();final name=(''+(p['firstName']??'').toString()+' '+(p['lastName']??'').toString()).trim();
       final details=[p['profession'],p['education'],p['cityName'],p['religionName'],p['casteName']].where((x)=>x!=null&&x.toString().isNotEmpty).join(' · ');
       return Padding(padding:const EdgeInsets.only(bottom:9),child:panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
