@@ -34,7 +34,19 @@ class _AccountSettingsTabState extends State<_AccountSettingsTab>{
     super.dispose();}
   Future<void> load()async{setState(() { loading=true; error=null; });try{final r=await widget.api.get('/account',authenticated:true);final d=r['data'];if(d is Map){first.text=d['firstName']?.toString()??'';last.text=d['lastName']?.toString()??'';username.text=d['userName']?.toString()??'';email=d['email']?.toString()??'';newEmail.text=email;}}catch(e){error=e.toString();}finally{if(mounted)setState(()=>loading=false);}}
   Future<void> run(Future<void> Function() fn)async{setState(() { busy=true; error=null; notice=null; });try{await fn();}catch(e){if(mounted)setState(()=>error=e.toString().replaceFirst('ApiException: ',''));}finally{if(mounted)setState(()=>busy=false);}}
-  Future<void> uploadAccountPhoto() async { final file=await picker.pickImage(source:ImageSource.gallery,imageQuality:88);if(file==null)return;final bytes=await file.readAsBytes();if(bytes.length>5*1024*1024){setState(()=>error='Photo size cannot exceed 5 MB.');return;}final ext=file.name.split('.').last.toLowerCase();if(!['jpg','jpeg','png','webp'].contains(ext)){setState(()=>error='Choose JPG, PNG or WEBP.');return;}await run(()async{await widget.api.putMultipartFile('/account/profile-picture',bytes:bytes,filename:file.name,authenticated:true);setState(()=>notice='Profile picture updated.');});}
+  Future<void> uploadAccountPhoto() async {
+    final file=await picker.pickImage(source:ImageSource.gallery,imageQuality:88);
+    if(!mounted||file==null)return;
+    final bytes=await file.readAsBytes();
+    if(!mounted)return;
+    if(bytes.length>5*1024*1024){setState(()=>error='Photo size cannot exceed 5 MB.');return;}
+    final ext=file.name.split('.').last.toLowerCase();
+    if(!['jpg','jpeg','png','webp'].contains(ext)){setState(()=>error='Choose JPG, PNG or WEBP.');return;}
+    await run(()async{
+      await widget.api.putMultipartFile('/account/profile-picture',bytes:bytes,filename:file.name,authenticated:true);
+      if(mounted)setState(()=>notice='Profile picture updated.');
+    });
+  }
   void startResendCooldown(){
     resendTimer?.cancel();setState(()=>resendCooldown=60);
     resendTimer=Timer.periodic(const Duration(seconds:1),(timer){
