@@ -62,23 +62,21 @@ Scope is the existing **User Panel only**. Admin and Mentor panels are excluded.
 
 ## Verification summary
 
-Latest observed CI run on the current Flutter development branch:
-- `flutter pub get`: passed
-- `flutter analyze --no-fatal-infos`: passed
-- `flutter test`: passed
-- Temporary Android runner generation: passed
-- Java setup: passed
-- `flutter build apk --debug`: still running when this report was last checked
+### Completed CI evidence
+- [Run 43413977908](https://github.com/harshbhatt2106/Vedic_Flutter/actions/runs/43413977908): passed `flutter pub get`, `flutter doctor -v`, `flutter pub outdated`, `flutter analyze --no-fatal-infos`, all 21 Flutter tests, Android runner generation/commit, `flutter build apk --debug` and APK artifact upload.
+- [Run 43414180792](https://github.com/harshbhatt2106/Vedic_Flutter/actions/runs/43414180792): passed with INTERNET permission in the main Android manifest.
+- [Run 43414418762](https://github.com/harshbhatt2106/Vedic_Flutter/actions/runs/43414418762): passed with debug-only cleartext HTTP configuration.
+- [Run 43414727751](https://github.com/harshbhatt2106/Vedic_Flutter/actions/runs/43414727751): latest SignalR error-handling patch; analysis and all 21 tests passed, with the APK build running at the time of this report update.
 
-The Android runner is generated temporarily by CI and is not committed in the repository. A permanent Android application ID and release signing configuration are not established in the inspected Flutter source. Therefore, this CI debug build does not verify a Play Store release bundle.
+The Android runner is permanently committed in `android/` and uses application ID `com.vedicvivah.app`. The debug APK is uploaded as the `vedicvivah-debug-apk` artifact by successful workflow runs.
 
-No authenticated live API workflow, two-account SignalR test, physical Android-device test, or destructive account test has been performed. No test-account credentials were provided, and no real purchases or destructive production operations were attempted. Firebase configuration is absent; the inspected Web User Panel does not implement a push-notification client.
+No authenticated live API workflow, two-account SignalR test, physical Android-device test, or destructive account test has been performed. No test-account credentials were supplied. Release signing and a Play Store AAB are not configured. The generated launcher icon is still the Flutter template icon. Firebase native push and checkout remain outside Web User Panel parity because the inspected web client does not implement those client workflows.
 
 ## Counts and parity
 
 There are **30 audited feature rows**:
 - **28 applicable** to the current Web User Panel/backend.
-- **2 not applicable**: User checkout/payment and native push client (no corresponding Web User Panel capability).
+- **2 not applicable**: native push client and User checkout/payment.
 - **0 FULLY IMPLEMENTED and runtime-verified** at this checkpoint.
 - **28 PARTIALLY IMPLEMENTED**: the Flutter source and endpoint wiring exist, but live API/device workflows remain unverified.
 - **0 UI ONLY**, **0 API NOT CONNECTED**, **0 NOT IMPLEMENTED**, **0 BROKEN** identified by this static checkpoint.

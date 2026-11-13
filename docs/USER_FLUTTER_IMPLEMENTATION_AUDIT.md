@@ -629,3 +629,54 @@ The following User-facing implementation is now present on `flutter-development`
 - No live authenticated API end-to-end run or physical Android-device test has been performed.
 - Payment initiation remains not applicable to the current backend contract; do not invent a payment flow.
 - **Do not claim 100% parity yet.** Finish the Android build diagnosis, obtain the Android application ID/Firebase config, complete the remaining selector/UI parity, and run authenticated device testing before sign-off.
+
+
+## 19. Follow-up source fixes and Android runner verification — 2026-11-13
+
+This section supersedes the earlier Android-runner and CI limitations recorded in section 18.
+
+### Source revisions inspected
+- Web frontend branch `FainalFrontend`: `8850d016c92747477663b549e52c9fa2c416535e`
+- Backend branch `FainalBak`: `3955f39cf8977d2563fa5e07204604e5ed90b6b7`
+- Flutter branch latest application-code commit at this checkpoint: `03e5a8823e53f6e548b23d896c57a2e80efc57cc`
+
+### Additional source defects corrected
+- Photo upload no longer displays a success notice after a failed upload.
+- Added mounted/lifecycle guards to asynchronous match-connection search, message send, photo picker, photo actions and account-photo picker flows.
+- SignalR connection failures are now surfaced instead of silently discarded.
+- Real-time message read-status failures are handled rather than left as unhandled asynchronous errors.
+
+These were source-level reliability defects; they were not reproduced on a physical device because no device session was available.
+
+### Permanent Android project
+- The Android runner is now committed under `android/` on the existing `flutter-development` branch.
+- Application ID and namespace: `com.vedicvivah.app`, verified against the existing MAUI project's `ApplicationId`.
+- Application label: `VedicVivah`.
+- Main Android manifest includes INTERNET permission.
+- Debug manifest allows cleartext HTTP only for local development; release remains HTTPS-only.
+- CI selects Temurin JDK 17 before generating/building the Android project.
+- The launcher icon is still the generated Flutter template icon; the existing VedicVivah logo/splash has not yet been migrated.
+- Release signing is not configured in Flutter. No Play Store release AAB has been built.
+
+### CI verification evidence
+- Run [43413977908](https://github.com/harshbhatt2106/Vedic_Flutter/actions/runs/43413977908) succeeded: `flutter doctor -v`, `flutter pub outdated`, `flutter analyze --no-fatal-infos`, all 21 tests, Android runner generation/commit, debug APK build and artifact upload.
+- Run [43414180792](https://github.com/harshbhatt2106/Vedic_Flutter/actions/runs/43414180792) succeeded with the main-manifest INTERNET permission and uploaded the debug APK.
+- Run [43414418762](https://github.com/harshbhatt2106/Vedic_Flutter/actions/runs/43414418762) succeeded with debug-only cleartext networking.
+- Run [43414727751](https://github.com/harshbhatt2106/Vedic_Flutter/actions/runs/43414727751) includes the subsequent SignalR error-handling changes. At the time this section was written, analyze and all 21 tests had passed; the final debug APK step was still running.
+
+### Runtime verification still outstanding
+- No physical Android device or emulator workflow was run from this session.
+- No authenticated live API end-to-end tests were performed because safe test-account credentials were not available.
+- No two-account live SignalR/reconnection test was performed.
+- No destructive account action or real purchase was attempted.
+- Release signing, Play Store AAB generation, Firebase native push delivery and branded launcher/splash assets remain outside the verified result. Native push and checkout remain not applicable to Web User Panel parity where the inspected web client does not provide those flows.
+
+### Current strict parity count
+- 30 audited feature rows.
+- 28 applicable Web User Panel features; 2 not applicable (native push client and purchase/checkout).
+- 28 partially implemented pending live authenticated/device workflow verification.
+- 0 fully implemented and end-to-end runtime verified.
+- 0 UI-only, 0 API-not-connected, 0 not-implemented and 0 broken identified by this static checkpoint.
+- Strict verified parity: `0 / 28 × 100 = 0%`.
+
+The 0% figure is the strict verified-parity metric, not a statement that the Flutter code contains no implementation. Do not claim 100% parity until the 28 applicable workflows have been verified against the live backend and Android runtime.
