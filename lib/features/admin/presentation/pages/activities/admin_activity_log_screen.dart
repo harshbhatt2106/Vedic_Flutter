@@ -285,9 +285,9 @@ class _ActivityCard extends StatelessWidget {
             const SizedBox(height: 8),
             const Row(children: [
               Icon(Icons.info_outline, size: 13, color: AppPalette.gold),
-              const SizedBox(width: 5),
-              const Expanded(child: Text('Tap to inspect safe details', style: TextStyle(fontFamily: 'sans-serif', fontSize: 10, color: AppPalette.secondary))),
-              const Icon(Icons.chevron_right, size: 18, color: AppPalette.gold),
+              SizedBox(width: 5),
+              Expanded(child: Text('Tap to inspect safe details', style: TextStyle(fontFamily: 'sans-serif', fontSize: 10, color: AppPalette.secondary))),
+              Icon(Icons.chevron_right, size: 18, color: AppPalette.gold),
             ]),
           ]),
         ),
