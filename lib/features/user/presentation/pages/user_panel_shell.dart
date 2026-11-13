@@ -82,7 +82,7 @@ class _MandatoryPrivacyGateState extends State<_MandatoryPrivacyGate>{
   @override void dispose(){controller.removeListener(checkBottom);controller.dispose();super.dispose();}
   void checkBottom(){if(!controller.hasClients)return;final atEnd=controller.position.maxScrollExtent<=1||controller.position.pixels>=controller.position.maxScrollExtent-2;if(atEnd&&!bottom&&mounted)setState(()=>bottom=true);}
   Future<void> accept()async{
-    if(!bottom||!confirmed||busy)return;setState(()=>{busy=true,error=null});
+    if(!bottom||!confirmed||busy)return;setState(() { busy=true; error=null; });
     try{await widget.api.post('/privacy-policy/accept-all',body:{},authenticated:true);final r=await widget.api.get('/privacy-policy/pending-acceptance',authenticated:true);final d=r['data'];if(d is List&&d.isNotEmpty)throw Exception('Some required policies are still pending. Please review and accept again.');widget.onAccepted();}
     catch(e){if(mounted)setState(()=>error=e.toString());}
     finally{if(mounted)setState(()=>busy=false);}
