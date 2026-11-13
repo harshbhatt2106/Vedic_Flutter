@@ -72,6 +72,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   final Map<String,String> interestStatuses={};
   final Map<String,Uint8List> discoveryAvatars={};
   StateSetter? _discoverModalSetState;
+  String? filterValidationError;
   final Map<String,TextEditingController> filters={for(final k in ['religionId','casteId','subCasteId','preferredGender','maritalStatus','motherTongue','education','profession','minYearlyIncome','maxYearlyIncome','minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','countryId','stateId','cityId','educationFieldId','courseId','qualificationId','occupationId','professionId','workType'])k:TextEditingController()};
   int discoverPage=1,totalPages=1;
   String choice='',marital='';
@@ -221,12 +222,32 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     final child=next[key];if(child!=null&&id!=null){final route=switch(key){'religionId'=>'/reference-data/castes?religionId=$id','casteId'=>'/reference-data/sub-castes?casteId=$id','educationFieldId'=>'/reference-data/courses?educationFieldId=$id','occupationId'=>'/reference-data/professions?occupationId=$id','countryId'=>'/locations/states?countryId=$id',_=>'/locations/cities?stateId=$id'};await _fetchDiscoverOptions(child,route);}
     if(mounted){setState((){});_discoverModalSetState?.call((){});}
   }
+  String? validateDiscoverFilters(){
+    final minAge=b.text.trim().isEmpty?null:int.tryParse(b.text.trim());
+    final maxAge=c.text.trim().isEmpty?null:int.tryParse(c.text.trim());
+    if(b.text.trim().isNotEmpty&&minAge==null||c.text.trim().isNotEmpty&&maxAge==null)return 'Enter valid minimum and maximum ages.';
+    if((minAge!=null&&minAge<18)||(maxAge!=null&&maxAge<18))return 'Age must be 18 or above.';
+    if(minAge!=null&&maxAge!=null&&minAge>maxAge)return 'Minimum age cannot exceed maximum age.';
+    final minIncome=filters['minYearlyIncome']!.text.trim().isEmpty?null:num.tryParse(filters['minYearlyIncome']!.text.trim());
+    final maxIncome=filters['maxYearlyIncome']!.text.trim().isEmpty?null:num.tryParse(filters['maxYearlyIncome']!.text.trim());
+    if(filters['minYearlyIncome']!.text.trim().isNotEmpty&&minIncome==null||filters['maxYearlyIncome']!.text.trim().isNotEmpty&&maxIncome==null)return 'Enter valid yearly income values.';
+    if(minIncome!=null&&maxIncome!=null&&minIncome>maxIncome)return 'Minimum income cannot exceed maximum income.';
+    int? feet(String key)=>filters[key]!.text.trim().isEmpty?null:int.tryParse(filters[key]!.text.trim());
+    int? inches(String key)=>filters[key]!.text.trim().isEmpty?null:int.tryParse(filters[key]!.text.trim());
+    for(final key in ['minHeightFeet','maxHeightFeet']){final value=feet(key);if(filters[key]!.text.trim().isNotEmpty&&(value==null||value<4||value>7))return 'Height in feet must be between 4 and 7.';}
+    for(final key in ['minHeightInches','maxHeightInches']){final value=inches(key);if(filters[key]!.text.trim().isNotEmpty&&(value==null||value<0||value>11))return 'Height inches must be between 0 and 11.';}
+    final minTotal=feet('minHeightFeet')==null?null:feet('minHeightFeet')!*12+(inches('minHeightInches')??0);
+    final maxTotal=feet('maxHeightFeet')==null?null:feet('maxHeightFeet')!*12+(inches('maxHeightInches')??0);
+    if(minTotal!=null&&maxTotal!=null&&minTotal>maxTotal)return 'Minimum height cannot exceed maximum height.';
+    return null;
+  }
   Future<void> clearDiscoverFilters()async{
     for(final controller in [a,b,c,...filters.values]){controller.clear();}
-    discoverPage=1;items=[];await load();
+    filterValidationError=null;discoverPage=1;items=[];await load();
   }
   int get activeDiscoverFilterCount=>[a,b,c,...filters.values].where((x)=>x.text.trim().isNotEmpty).length;
   Future<void> openDiscoverFilters()async{
+    filterValidationError=null;
     await showModalBottomSheet<void>(context:context,isScrollControlled:true,useSafeArea:true,backgroundColor:AppPalette.background,builder:(ctx)=>StatefulBuilder(builder:(ctx,setModalState){
       _discoverModalSetState=setModalState;
       return Padding(padding:EdgeInsets.fromLTRB(16,16,16,MediaQuery.of(ctx).viewInsets.bottom+16),child:SizedBox(height:MediaQuery.of(ctx).size.height*.82,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
@@ -244,10 +265,11 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
           const SizedBox(height:10),const Text('Location',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
           Wrap(spacing:8,runSpacing:8,children:[filterField('Country','countryId'),filterField('State','stateId'),filterField('City','cityId')]),
         ]))),
+        if(filterValidationError!=null)Padding(padding:const EdgeInsets.only(bottom:8),child:Text(filterValidationError!,style:const TextStyle(color:AppPalette.error))),
         Row(children:[
           Expanded(child:OutlinedButton(onPressed:(){Navigator.pop(ctx);clearDiscoverFilters();},child:const Text('Clear all'))),
           const SizedBox(width:10),
-          Expanded(child:FilledButton(onPressed:(){Navigator.pop(ctx);discoverPage=1;load();},child:const Text('Apply filters'))),
+          Expanded(child:FilledButton(onPressed:(){final issue=validateDiscoverFilters();if(issue!=null){setModalState(()=>filterValidationError=issue);return;}Navigator.pop(ctx);discoverPage=1;load();},child:const Text('Apply filters'))),
         ]),
       ])));
     }));
@@ -423,7 +445,7 @@ Align(alignment:Alignment.centerLeft,child:Text('Match gender: ${choice.isEmpty?
         if((lo!=null&&lo<18)||(hi!=null&&hi<18))throw Exception('Minimum partner age is 18.');
         final minIncome=num.tryParse(prefFields['minYearlyIncome']!.text),maxIncome=num.tryParse(prefFields['maxYearlyIncome']!.text);
         if(minIncome!=null&&maxIncome!=null&&minIncome>maxIncome)throw Exception('Minimum income cannot exceed maximum income.');
-        for(final key in ['minHeightFeet','maxHeightFeet']){final value=int.tryParse(prefFields[key]!.text);if(value!=null&&(value<4||value>8))throw Exception('Height in feet must be between 4 and 8.');}
+        for(final key in ['minHeightFeet','maxHeightFeet']){final value=int.tryParse(prefFields[key]!.text);if(value!=null&&(value<4||value>7))throw Exception('Height in feet must be between 4 and 7.');}
         for(final key in ['minHeightInches','maxHeightInches']){final value=int.tryParse(prefFields[key]!.text);if(value!=null&&(value<0||value>11))throw Exception('Height inches must be between 0 and 11.');}
         await widget.api.put('/partner-preferences',body:{
           'preferredGender':choice.isEmpty?null:choice,'maritalStatus':marital.isEmpty?null:marital,'additionalRequirements':c.text.trim().isEmpty?null:c.text.trim(),'rowVersion':data['rowVersion'],
