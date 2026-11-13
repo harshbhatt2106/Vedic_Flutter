@@ -8,6 +8,7 @@ import '../members/admin_members_screen.dart';
 import '../activities/admin_activity_log_screen.dart';
 import '../reports/admin_reports_screen.dart';
 import '../mentors/admin_mentor_management_screen.dart';
+import '../mentor_requests/admin_mentor_requests_screen.dart';
 
 class AdminShellScreen extends StatefulWidget {
   const AdminShellScreen({
@@ -145,6 +146,10 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
           ),
         'Mentors' => AdminMentorManagementScreen(
             key: const ValueKey('admin-mentors'),
+            apiClient: widget.apiClient,
+          ),
+        'Mentor Requests' => AdminMentorRequestsScreen(
+            key: const ValueKey('admin-mentor-requests'),
             apiClient: widget.apiClient,
           ),
         _ => _ModuleNotImplementedScreen(module: _selected),
