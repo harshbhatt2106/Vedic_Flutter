@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
 import 'user_photos_screen.dart';
+import 'user_contacts_mentor_screen.dart';
 
 class UserWorkspaceScreen extends StatefulWidget {
   const UserWorkspaceScreen({super.key, required this.apiClient});
@@ -11,13 +12,13 @@ class UserWorkspaceScreen extends StatefulWidget {
 }
 class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTickerProviderStateMixin {
   late final TabController tabs;
-  @override void initState(){super.initState();tabs=TabController(length:7,vsync:this);}
+  @override void initState(){super.initState();tabs=TabController(length:9,vsync:this);}
   @override void dispose(){tabs.dispose();super.dispose();}
   @override Widget build(BuildContext context)=>Scaffold(
     backgroundColor:AppPalette.background,
     appBar:AppBar(backgroundColor:AppPalette.background,title:const Text('Your account',style:TextStyle(color:AppPalette.darkMaroon)),
       bottom:TabBar(controller:tabs,isScrollable:true,labelColor:AppPalette.maroon,unselectedLabelColor:AppPalette.secondary,indicatorColor:AppPalette.gold,
-        tabs:const [Tab(text:'Find matches'),Tab(text:'Profile'),Tab(text:'Photos'),Tab(text:'Preferences'),Tab(text:'Messages'),Tab(text:'Support'),Tab(text:'Plans')])),
+        tabs:const [Tab(text:'Find matches'),Tab(text:'Profile'),Tab(text:'Photos'),Tab(text:'Preferences'),Tab(text:'Messages'),Tab(text:'Support'),Tab(text:'Plans'),Tab(text:'References'),Tab(text:'Mentor')])),
     body:TabBarView(controller:tabs,children:[
       _WorkspaceTab(api:widget.apiClient,kind:'discover'),
       _WorkspaceTab(api:widget.apiClient,kind:'profile'),
@@ -26,6 +27,8 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTi
       _WorkspaceTab(api:widget.apiClient,kind:'messages'),
       _WorkspaceTab(api:widget.apiClient,kind:'support'),
       _WorkspaceTab(api:widget.apiClient,kind:'plans'),
+      UserReferencesScreen(apiClient:widget.apiClient),
+      UserMentorScreen(apiClient:widget.apiClient),
     ]),
   );
 }
