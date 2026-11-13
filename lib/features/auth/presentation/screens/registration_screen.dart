@@ -163,7 +163,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   Widget _loginLink() => Wrap(alignment: WrapAlignment.center, children: [
     const Text('Already registered? ', style: TextStyle(fontFamily: 'sans-serif', color: AppPalette.secondary, fontSize: 13)),
-    GestureDetector(onTap: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => LoginScreen(repository: widget.repository))), child: const Text('Sign in', style: TextStyle(fontFamily: 'sans-serif', color: AppPalette.maroon, fontWeight: FontWeight.w700, fontSize: 13))),
+    GestureDetector(onTap: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => LoginScreen(repository: widget.repository, apiClient: widget.apiClient))), child: const Text('Sign in', style: TextStyle(fontFamily: 'sans-serif', color: AppPalette.maroon, fontWeight: FontWeight.w700, fontSize: 13))),
   ]);
 }
 
