@@ -1,0 +1,1 @@
+Admin dashboard, moderation, users, reports, activities, mentors, master data, settings, privacy, success stories, assignments, support and subscription plan pages.
