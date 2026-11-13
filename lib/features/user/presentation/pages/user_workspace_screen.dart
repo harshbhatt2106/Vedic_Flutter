@@ -222,7 +222,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   Future<void> _changePreferenceOption(String key,int? value)async{
     prefFields[key]!.text=value?.toString()??'';
     const clearChildren={'religionId':['casteId','subCasteId'],'casteId':['subCasteId'],'educationFieldId':['courseId'],'occupationId':['professionId'],'countryId':['stateId','cityId'],'stateId':['cityId']};
-    for(final child in clearChildren[key]??const <String>[])prefFields[child]!.clear();
+    for(final child in clearChildren[key]??const <String>[]){prefFields[child]!.clear();prefOptions[child]=[];}
     final next=<String,String>{'religionId':'casteId','casteId':'subCasteId','educationFieldId':'courseId','occupationId':'professionId','countryId':'stateId','stateId':'cityId'};
     final child=next[key];if(child!=null&&value!=null){final route=switch(key){'religionId'=>'/reference-data/castes?religionId=$value','casteId'=>'/reference-data/sub-castes?casteId=$value','educationFieldId'=>'/reference-data/courses?educationFieldId=$value','occupationId'=>'/reference-data/professions?occupationId=$value','countryId'=>'/locations/states?countryId=$value',_=>'/locations/cities?stateId=$value'};await _fetchPrefOptions(child,route);}
     if(mounted)setState((){});
