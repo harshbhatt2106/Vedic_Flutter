@@ -532,9 +532,35 @@ class _ConversationSheet extends StatefulWidget {
 class _ConversationSheetState extends State<_ConversationSheet>{
   bool loading=true,sending=false;List<Map<String,dynamic>> messages=[];final text=TextEditingController();String? error;late final ChatRealtimeService realtime;
   String get id=>widget.conversation['id'].toString();
-  @override void initState(){super.initState();realtime=ChatRealtimeService(api:widget.api,onMessage:_onRealtimeMessage,onMessageDeleted:_onRealtimeDelete);load();realtime.connect().then((_)=>realtime.joinConversation(id)).catchError((_){});}
+  @override void initState(){
+    super.initState();
+    realtime=ChatRealtimeService(api:widget.api,onMessage:_onRealtimeMessage,onMessageDeleted:_onRealtimeDelete);
+    load();
+    _connectRealtime();
+  }
   @override void dispose(){unawaited(realtime.dispose());text.dispose();super.dispose();}
-  void _onRealtimeMessage(Map<String,dynamic> message){if(message['conversationId']?.toString()!=id||!mounted)return;setState(() { if(!messages.any((m)=>m['id']==message['id'])) { messages.add(message); } });unawaited(widget.api.put('/conversations/$id/read',body:{},authenticated:true));}
+  Future<void> _connectRealtime()async{
+    try{
+      await realtime.connect();
+      await realtime.joinConversation(id);
+    }catch(e){
+      if(mounted)setState(()=>error='Live chat is unavailable right now. You can still send messages; reopen the conversation to reconnect.');
+    }
+  }
+  Future<void> _markConversationRead()async{
+    try{
+      await widget.api.put('/conversations/$id/read',body:{},authenticated:true);
+    }catch(e){
+      if(mounted)setState(()=>error='Message received, but the read status could not be updated.');
+    }
+  }
+  void _onRealtimeMessage(Map<String,dynamic> message){
+    if(message['conversationId']?.toString()!=id||!mounted)return;
+    setState(() {
+      if(!messages.any((m)=>m['id']==message['id']))messages.add(message);
+    });
+    unawaited(_markConversationRead());
+  }
   void _onRealtimeDelete(String messageId,String conversationId){if(conversationId!=id||!mounted)return;setState(()=>messages.removeWhere((m)=>m['id']?.toString()==messageId));}
   Future<void> load()async{try{final r=await widget.api.get('/conversations/'+id+'/messages?take=50',authenticated:true);final d=r['data'];messages=d is List?d.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];await widget.api.put('/conversations/'+id+'/read',body:{},authenticated:true);}catch(e){error=e.toString();}finally{if(mounted)setState(()=>loading=false);}}
   Future<void> loadOlder()async{
