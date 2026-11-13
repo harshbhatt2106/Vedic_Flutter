@@ -23,17 +23,43 @@ class _UserReferencesScreenState extends State<UserReferencesScreen>{
     const SizedBox(height:8),
     DropdownButtonFormField<int>(initialValue:selectedCityId,decoration:const InputDecoration(labelText:'City',filled:true),items:cities.map((x)=>DropdownMenuItem<int>(value:(x['cityId'] as num).toInt(),child:Text(x['cityName'].toString()))).toList(),onChanged:(v)=>setState(() { selectedCityId=v; city.text=v?.toString()??''; })),
   ]);
-  Future<void> save()async{final cityId=int.tryParse(city.text.trim());if(name.text.trim().isEmpty||phone.text.trim().length<7||cityId==null||relation.text.trim().isEmpty){setState(()=>error='Enter name, valid phone, city ID and relationship.');return;}setState(()=>busy=true);try{final body={'name':name.text.trim(),'phoneNumber':phone.text.trim(),'cityId':cityId,'relationshipWithUser':relation.text.trim()};if(editingId==null){await widget.apiClient.post('/user-references',body:body,authenticated:true);}else{await widget.apiClient.put('/user-references/$editingId',body:body,authenticated:true);}name.clear();phone.clear();city.clear();relation.clear();editingId=null;selectedCountryId=null;selectedStateId=null;selectedCityId=null;states=[];cities=[];await load();}catch(e){setState(()=>error=e.toString());}finally{if(mounted)setState(()=>busy=false);}}
-  void edit(Map<String,dynamic> item){setState(() { editingId=item['referenceId']?.toString(); name.text=item['name']?.toString()??''; phone.text=item['phoneNumber']?.toString()??''; city.text=item['cityId']?.toString()??''; relation.text=item['relationshipWithUser']?.toString()??''; });}
+  Future<void> save()async{final cityId=selectedCityId??int.tryParse(city.text.trim());if(name.text.trim().isEmpty||phone.text.trim().length<7||phone.text.trim().length>15||cityId==null||relation.text.trim().isEmpty){setState(()=>error='Enter a name, valid phone number, country, state, city and relationship.');return;}if(editingId==null&&refs.length>=3){setState(()=>error='You can add a maximum of 3 reference contacts.');return;}setState(()=>busy=true);try{final body={'name':name.text.trim(),'phoneNumber':phone.text.trim(),'cityId':cityId,'relationshipWithUser':relation.text.trim()};if(editingId==null){await widget.apiClient.post('/user-references',body:body,authenticated:true);}else{await widget.apiClient.put('/user-references/$editingId',body:body,authenticated:true);}name.clear();phone.clear();city.clear();relation.clear();editingId=null;selectedCountryId=null;selectedStateId=null;selectedCityId=null;states=[];cities=[];await load();}catch(e){setState(()=>error=e.toString());}finally{if(mounted)setState(()=>busy=false);}}
+  Future<void> edit(Map<String,dynamic> item)async{
+    final cityId=(item['cityId'] as num?)?.toInt();
+    setState(() { editingId=item['referenceId']?.toString(); name.text=item['name']?.toString()??''; phone.text=item['phoneNumber']?.toString()??''; city.text=cityId?.toString()??''; relation.text=item['relationshipWithUser']?.toString()??'';selectedCountryId=null;selectedStateId=null;selectedCityId=null;states=[];cities=[];busy=true; });
+    try{
+      // The reference API stores CityId only. Resolve its parent selectors exactly as the web editor does.
+      for(final countryItem in countries){
+        final countryId=(countryItem['countryId'] as num?)?.toInt();if(countryId==null)continue;
+        final stateResponse=await widget.apiClient.get('/locations/states?countryId=$countryId',authenticated:true);
+        final stateData=stateResponse['data'];
+        final stateItems=stateData is List?stateData.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():<Map<String,dynamic>>[];
+        for(final stateItem in stateItems){
+          final stateId=(stateItem['stateId'] as num?)?.toInt();if(stateId==null)continue;
+          final cityResponse=await widget.apiClient.get('/locations/cities?stateId=$stateId',authenticated:true);
+          final cityData=cityResponse['data'];
+          final cityItems=cityData is List?cityData.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():<Map<String,dynamic>>[];
+          if(cityItems.any((x)=>(x['cityId'] as num?)?.toInt()==cityId)){
+            if(mounted)setState((){selectedCountryId=countryId;selectedStateId=stateId;selectedCityId=cityId;states=stateItems;cities=cityItems;});
+            return;
+          }
+        }
+      }
+      if(mounted)setState(()=>error='Could not resolve this contact city. Select country, state and city again.');
+    }catch(e){if(mounted)setState(()=>error=e.toString());}
+    finally{if(mounted)setState(()=>busy=false);}
+  }
+  void clearForm(){setState(()=>{editingId=null,selectedCountryId=null,selectedStateId=null,selectedCityId=null,states=[],cities=[]});name.clear();phone.clear();city.clear();relation.clear();}
   Future<void> remove(String id)async{final yes=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Delete reference?'),content:const Text('This reference contact will be removed.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete'))]));if(yes!=true)return;try{await widget.apiClient.delete('/user-references/$id',authenticated:true);await load();}catch(e){setState(()=>error=e.toString());}}
   Widget field(String label,TextEditingController c,{TextInputType? keyboard})=>Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:c,keyboardType:keyboard,decoration:InputDecoration(labelText:label,filled:true)));
   @override Widget build(BuildContext context){if(loading)return const Center(child:CircularProgressIndicator());return RefreshIndicator(onRefresh:load,child:ListView(padding:const EdgeInsets.all(14),children:[
     const Text('Reference contacts',style:TextStyle(fontSize:22,color:AppPalette.darkMaroon)),
     if(error!=null)Text(error!,style:const TextStyle(color:AppPalette.error)),
     Card(color:AppPalette.surface,child:Padding(padding:const EdgeInsets.all(14),child:Column(children:[
-      field('Full name',name),field('Phone number',phone,keyboard:TextInputType.phone),locationSelectors(),field('City ID (manual fallback)',city,keyboard:TextInputType.number),field('Relationship with you',relation),
-      SizedBox(width:double.infinity,child:FilledButton(onPressed:busy?null:save,child:Text(editingId==null?'Add reference':'Update reference'))),
-      if(editingId!=null)TextButton(onPressed:(){setState(()=>editingId=null);name.clear();phone.clear();city.clear();relation.clear();},child:const Text('Cancel editing')),
+      Text('${refs.length}/3 reference contacts',style:const TextStyle(color:AppPalette.secondary)),
+      field('Full name',name),field('Phone number',phone,keyboard:TextInputType.phone),locationSelectors(),field('Relationship with you',relation),
+      SizedBox(width:double.infinity,child:FilledButton(onPressed:busy||(editingId==null&&refs.length>=3)?null:save,child:Text(busy?'Please wait...':editingId==null?'Add reference':'Update reference'))),
+      if(editingId!=null)TextButton(onPressed:busy?null:clearForm,child:const Text('Cancel editing')),
     ]))),
     if(refs.isEmpty)const Padding(padding:EdgeInsets.all(20),child:Text('No reference contacts added yet.')),
     ...refs.map((r){final id=r['referenceId']?.toString()??'';return Card(color:AppPalette.surface,child:ListTile(title:Text(r['name']?.toString()??''),subtitle:Text('${r['relationshipWithUser']??''} · ${r['phoneNumber']??''} · ${r['cityName']??''}'),trailing:PopupMenuButton<String>(onSelected:(v){if(v=='edit')edit(r);if(v=='delete')remove(id);},itemBuilder:(_)=>const [PopupMenuItem(value:'edit',child:Text('Edit')),PopupMenuItem(value:'delete',child:Text('Delete'))])));}),
