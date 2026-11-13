@@ -70,7 +70,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   final Map<String,List<Map<String,dynamic>>> discoveryOptions={};
   final Map<String,TextEditingController> filters={for(final k in ['religionId','casteId','subCasteId','preferredGender','maritalStatus','motherTongue','education','profession','minYearlyIncome','maxYearlyIncome','minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','countryId','stateId','cityId','educationFieldId','courseId','qualificationId','occupationId','professionId','workType'])k:TextEditingController()};
   int discoverPage=1,totalPages=1;
-  String choice='Female',marital='Never Married';
+  String choice='',marital='';
   @override void initState(){super.initState();load();}
   @override void dispose(){for(final x in [a,b,c,d,e,...filters.values,...prefFields.values]){x.dispose();}super.dispose();}
   String get title=>switch(widget.kind){'discover'=>'Find matches','profile'=>'Your biodata','preferences'=>'Partner preferences','messages'=>'Messages','support'=>'Help & support',_=>'Membership plans'};
@@ -319,9 +319,15 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   }
   List<Widget> preferences()=>[
     panel(Column(children:[
-      DropdownButtonFormField<String>(value:choice,decoration:const InputDecoration(labelText:'Preferred gender'),items:['Female','Male','Any'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(x)=>setState(()=>choice=x??choice)),
+Align(alignment:Alignment.centerLeft,child:Text('Match gender: ${choice.isEmpty?'All members':'${choice} profiles'}',style:const TextStyle(color:AppPalette.secondary))),
       const SizedBox(height:10),
-      DropdownButtonFormField<String>(value:marital,decoration:const InputDecoration(labelText:'Marital status'),items:['Never Married','Divorced','Widowed','Any'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(x)=>setState(()=>marital=x??marital)),
+      DropdownButtonFormField<String>(initialValue:marital,decoration:const InputDecoration(labelText:'Preferred marital status'),items:const [
+        DropdownMenuItem(value:'',child:Text('Any status')),
+        DropdownMenuItem(value:'Never Married',child:Text('Never Married')),
+        DropdownMenuItem(value:'Divorced',child:Text('Divorced')),
+        DropdownMenuItem(value:'Widowed',child:Text('Widowed')),
+        DropdownMenuItem(value:'Awaiting Divorce',child:Text('Awaiting Divorce')),
+      ],onChanged:(x)=>setState(()=>marital=x??'')),
       const SizedBox(height:10),field('Minimum age',a,keyboard:TextInputType.number),field('Maximum age',b,keyboard:TextInputType.number),field('Additional requirements',c,lines:3),
       const Divider(),const Align(alignment:Alignment.centerLeft,child:Text('Height range',style:TextStyle(fontWeight:FontWeight.w700))),
       prefField('Minimum height (feet)','minHeightFeet'),prefField('Minimum height (inches)','minHeightInches'),prefField('Maximum height (feet)','maxHeightFeet'),prefField('Maximum height (inches)','maxHeightInches'),
@@ -337,8 +343,10 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         if((lo!=null&&lo<18)||(hi!=null&&hi<18))throw Exception('Minimum partner age is 18.');
         final minIncome=num.tryParse(prefFields['minYearlyIncome']!.text),maxIncome=num.tryParse(prefFields['maxYearlyIncome']!.text);
         if(minIncome!=null&&maxIncome!=null&&minIncome>maxIncome)throw Exception('Minimum income cannot exceed maximum income.');
+        for(final key in ['minHeightFeet','maxHeightFeet']){final value=int.tryParse(prefFields[key]!.text);if(value!=null&&(value<4||value>8))throw Exception('Height in feet must be between 4 and 8.');}
+        for(final key in ['minHeightInches','maxHeightInches']){final value=int.tryParse(prefFields[key]!.text);if(value!=null&&(value<0||value>11))throw Exception('Height inches must be between 0 and 11.');}
         await widget.api.put('/partner-preferences',body:{
-          'preferredGender':choice,'maritalStatus':marital,'additionalRequirements':c.text.trim().isEmpty?null:c.text.trim(),'rowVersion':data['rowVersion'],
+          'preferredGender':choice.isEmpty?null:choice,'maritalStatus':marital.isEmpty?null:marital,'additionalRequirements':c.text.trim().isEmpty?null:c.text.trim(),'rowVersion':data['rowVersion'],
           'age':{'minAge':lo,'maxAge':hi},
           'height':{'minFeet':int.tryParse(prefFields['minHeightFeet']!.text),'minInches':int.tryParse(prefFields['minHeightInches']!.text),'maxFeet':int.tryParse(prefFields['maxHeightFeet']!.text),'maxInches':int.tryParse(prefFields['maxHeightInches']!.text)},
           'community':{'religionId':int.tryParse(prefFields['religionId']!.text),'casteId':int.tryParse(prefFields['casteId']!.text),'subCasteId':int.tryParse(prefFields['subCasteId']!.text),'motherTongue':prefFields['motherTongue']!.text.trim().isEmpty?null:prefFields['motherTongue']!.text.trim()},
