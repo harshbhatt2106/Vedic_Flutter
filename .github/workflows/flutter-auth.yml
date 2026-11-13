@@ -52,13 +52,7 @@ jobs:
           fi
 
           if [ ! -s "$TARGET" ]; then
-            cat > "$TARGET" <<'EOF'
-package com.vedicvivah.app
-
-import io.flutter.embedding.android.FlutterActivity
-
-class MainActivity : FlutterActivity()
-EOF
+            printf '%s\n' 'package com.vedicvivah.app' '' 'import io.flutter.embedding.android.FlutterActivity' '' 'class MainActivity : FlutterActivity()' > "$TARGET"
           fi
 
           grep -q 'namespace = "com.vedicvivah.app"' android/app/build.gradle.kts
