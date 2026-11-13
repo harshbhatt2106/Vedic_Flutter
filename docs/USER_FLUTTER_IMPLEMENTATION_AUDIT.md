@@ -217,3 +217,132 @@ The inspected web referenceDataService.ts still contains local fallback arrays f
 
 **Profile parity status:** WEB structure and service/API surface partially traced; every individual field, conditional control, validation, modal, photo action and backend handler still requires line-by-line audit. Flutter profile UI is not evidenced by the current User page tree. Do not mark complete.
 
+
+
+## 12. Code-level audit findings — discovery and communication first pass
+
+### 12.1 Find Matches / Partner Preferences (/preferences)
+
+**Web sources inspected:** PartnerPreferencesPage.tsx, partnerPreferenceService.ts, matchFilters.ts, profileService.ts.  
+**Backend source inspected:** PartnerPreferencesController.cs and UserProfileController.cs.
+
+This route is not just a static preference form. The web page combines saved partner-preference editing, match discovery, pagination, profile detail/gallery dialogs and profile actions.
+
+**Observed UI interactions**
+- Expand/open preferences modal; close/cancel restores the form and marital-preference snapshot.
+- Reset filters.
+- Done/apply preferences and refresh the match search.
+- Previous/next pagination with disabled/loading states.
+- Open a profile detail modal and close it.
+- Toggle shortlist from a profile view/card.
+- Start Send Interest flow and confirm/cancel the send dialog.
+- Open profile photo gallery and close it.
+- Block profile flow with reason selection, cancel and confirm.
+- Report profile action opens report flow.
+- Profile card exposes profile, block and report icon actions in addition to shortlist/interest/photo actions.
+
+**Backend contract facts confirmed**
+- GET/PUT /partner-preferences; request includes preferred gender, marital status, additional requirements, row version, age, height, community, career and location nested objects.
+- GET /user-profile/discover accepts search, gender, age, religion/caste/sub-caste, mother tongue, education/profession, income, height, country/state/city, marital status, education-field/course/qualification/occupation/profession/work type and pagination.
+- Backend discover pageSize is 1–50, default 12; pageNumber must be >= 1.
+- Backend validates ages >= 18, min age <= max age and min income <= max income.
+- Preference save validates age >= 18, min/max age order, income order and maximum feet <= 8; row-version and duplicate-create races return 409.
+
+**Audit gap:** Need finish the web-to-backend query serialization and field-by-field control/validation map, including dependent master-data resets and all report/block/interest dialog requirements.
+
+**Flutter parity status:** Missing native discovery/preferences screen is evidenced by placeholder feature folders. NOT IMPLEMENTED / NOT VERIFIED.
+
+### 12.2 Interests (/interests)
+
+**Web source inspected:** InterestsPage.tsx.  
+**Backend source inspected:** InterestsController.cs.
+
+**Observed UI interactions**
+- Switch Received and Sent tabs.
+- Received pending interest can be accepted through a confirmation dialog or rejected directly.
+- Accepted connections expose a message action that navigates to /messages and passes openUserId.
+- Existing accepted connection can be rejected through a confirmation flow.
+- Rejected sent interest can be resubmitted.
+- Sent interest can be withdrawn through a confirmation dialog.
+- Empty-state CTA navigates to /preferences.
+- Dismissible status feedback is present.
+
+**Backend operations confirmed**
+- GET /interests/sent and /interests/received.
+- GET /interests/received/pending-count and /interests/status/{targetUserId}.
+- POST /interests/{targetUserId}; PUT /interests/{interestId}/accept; PUT /interests/{interestId}/reject.
+- GET /interests/connections/search?q=...
+- PUT /interests/{interestId}/resubmit; DELETE /interests/{interestId}.
+- Resubmit is explicitly sender-only; backend returns 409 when the current user is not the sender.
+
+**Audit gap:** Need inspect service DTO/status values and every conditional state in both tabs; confirm whether rejected/accepted states expose all same actions as the current UI.
+
+**Flutter parity status:** interests page directory is placeholder-only in the current Flutter tree. NOT IMPLEMENTED / NOT VERIFIED.
+
+### 12.3 Shortlist (/shortlisted)
+
+**Web source inspected:** ShortlistPage.tsx.  
+**Backend source inspected:** ShortlistsController.cs.
+
+**Observed UI interactions**
+- Empty state CTA navigates to /preferences.
+- Remove-from-shortlist heart action.
+- View Profile opens a profile detail modal.
+- Profile detail modal has close action.
+
+**Backend operations confirmed**
+- GET /shortlists.
+- GET /shortlists/status/{shortlistedUserId}.
+- POST /shortlists/{shortlistedUserId}.
+- DELETE /shortlists/{shortlistedUserId}.
+
+**Audit gap:** Inspect exact profile detail sections, protected photo retrieval, mutation refresh behavior and service response DTOs.
+
+**Flutter parity status:** shortlist page directory is placeholder-only. NOT IMPLEMENTED / NOT VERIFIED.
+
+### 12.4 Messages / Chat (/messages)
+
+**Web source inspected:** MessagesPage.tsx and useChatHub.ts.  
+**Backend source inspected:** ConversationsController.cs and ChatHub.cs.
+
+**Observed UI interactions**
+- New conversation dialog opens/closes.
+- Search accepted connections and choose a person to start/open chat.
+- Selecting a conversation switches to chat view; mobile layout has a back-to-list action.
+- Message composer supports keyboard send handling.
+- Message context menu opens and offers delete.
+- Delete-conversation confirmation supports cancel and delete.
+- Conversation photo is loaded through an authenticated blob path where available.
+
+**Backend operations confirmed from controller catalogue**
+- GET /conversations; POST /conversations/{otherUserId}.
+- GET /conversations/{conversationId}/messages with take/before pagination.
+- POST /conversations/{conversationId}/messages.
+- PUT /conversations/{conversationId}/read.
+- DELETE /conversations/{conversationId}/messages/{messageId}; DELETE /conversations/{conversationId}.
+- GET /conversations/unread-count; GET /conversations/{conversationId}/photo.
+- SignalR hub is mounted at /api/hubs/chat and supports JWT access_token query handling.
+
+**Audit gap:** Need record exact SignalR event names/payloads, reconnect behavior, optimistic send/error behavior, pagination defaults, delete authorization and read receipt behavior.
+
+**Flutter parity status:** messaging page and shared chat directories are placeholders; no User chat implementation is evidenced in Flutter. NOT IMPLEMENTED / NOT VERIFIED.
+
+### 12.5 Notifications (/notifications)
+
+**Web source inspected:** NotificationPage.tsx and notificationService.ts.  
+**Backend source inspected:** NotificationsController.cs and DeviceTokensController.cs.
+
+**Observed UI interactions**
+- Mark all notifications as read.
+- Mark an individual notification as read.
+- Notification item behavior/navigation needs full inspection of the remainder of the page and notification payload mapping.
+
+**Backend operations confirmed**
+- GET /notifications?take=...
+- GET /notifications/unread-count.
+- PUT /notifications/{notificationId}/read.
+- PUT /notifications/read-all.
+- POST/DELETE /device-tokens for push token registration/unregistration.
+
+**Flutter parity status:** notifications page/shared notifications directories are placeholders. Dashboard preview only displays recent notifications; it is not a notifications feature implementation. NOT IMPLEMENTED / NOT VERIFIED.
+
