@@ -14,6 +14,6 @@ class _AuthGateState extends State<AuthGate>{
  @override Widget build(BuildContext context)=>FutureBuilder<AuthSession?>(future:_session,builder:(context,snapshot){
  if(snapshot.connectionState!=ConnectionState.done)return const Scaffold(backgroundColor:Color(0xFFF7F1E8),body:Center(child:CircularProgressIndicator(color:Color(0xFF741B35))));
  final session=snapshot.data;
- return session==null?LoginScreen(repository:widget.repository):AuthRoleLandingScreen(repository:widget.repository,apiClient:widget.apiClient,session:session);
+ return session==null?LoginScreen(repository:widget.repository,apiClient:widget.apiClient):AuthRoleLandingScreen(repository:widget.repository,apiClient:widget.apiClient,session:session);
  });
 }

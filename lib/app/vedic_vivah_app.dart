@@ -19,7 +19,7 @@ class _VedicVivahAppState extends State<VedicVivahApp> {
  @override void dispose(){_apiClient.close();super.dispose();}
  @override Widget build(BuildContext context)=>MaterialApp(title:'VedicVivah',debugShowCheckedModeBanner:false,theme:AppTheme.light,initialRoute:'/',routes:{
  '/':(_)=>AuthGate(repository:_authRepository,apiClient:_apiClient),
- '/login':(_)=>LoginScreen(repository:_authRepository),
+ '/login':(_)=>LoginScreen(repository:_authRepository,apiClient:_apiClient),
  '/register':(_)=>RegistrationScreen(repository:_authRepository),
  '/forgot-password':(_)=>ForgotPasswordScreen(repository:_authRepository),
  });
