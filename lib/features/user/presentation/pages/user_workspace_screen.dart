@@ -467,7 +467,18 @@ Align(alignment:Alignment.centerLeft,child:Text('Match gender: ${choice.isEmpty?
     ])),
     panel(const Text('Existing advanced community, career, height and location preference values are retained when saving this form.',style:TextStyle(color:AppPalette.secondary,fontSize:12))),
   ];
-  Future<void> searchConnections()async{if(b.text.trim().isEmpty){setState(()=>connections=[]);return;}try{final r=await widget.api.get('/interests/connections/search?q='+Uri.encodeQueryComponent(b.text.trim()),authenticated:true);final d=r['data'];setState(()=>connections=d is List?d.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[]);}catch(e){setState(()=>error=e.toString());}}
+  Future<void> searchConnections()async{
+    if(!mounted)return;
+    if(b.text.trim().isEmpty){setState(()=>connections=[]);return;}
+    try{
+      final r=await widget.api.get('/interests/connections/search?q='+Uri.encodeQueryComponent(b.text.trim()),authenticated:true);
+      if(!mounted)return;
+      final d=r['data'];
+      setState(()=>connections=d is List?d.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[]);
+    }catch(e){
+      if(mounted)setState(()=>error=e.toString());
+    }
+  }
   Future<void> startChat(Map<String,dynamic> user)async{final userId=(user['userId']??'').toString();if(userId.isEmpty)return;await run(()async{await widget.api.post('/conversations/$userId',body:{},authenticated:true);await load();});}
   List<Widget> messages()=>[
     field('Search conversations',a),
@@ -532,7 +543,20 @@ class _ConversationSheetState extends State<_ConversationSheet>{
     try{final r=await widget.api.get('/conversations/$id/messages?take=50&before=$before',authenticated:true);final d=r['data'];final older=d is List?d.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():<Map<String,dynamic>>[];if(mounted)setState(()=>messages=[...older,...messages]);}
     catch(e){if(mounted)setState(()=>error=e.toString());}
   }
-  Future<void> send()async{if(text.text.trim().isEmpty)return;setState(()=>sending=true);try{await widget.api.post('/conversations/'+id+'/messages',body:{'content':text.text.trim()},authenticated:true);text.clear();await load();}catch(e){setState(()=>error=e.toString());}finally{if(mounted)setState(()=>sending=false);}}
+  Future<void> send()async{
+    if(!mounted||text.text.trim().isEmpty)return;
+    setState(()=>sending=true);
+    try{
+      await widget.api.post('/conversations/'+id+'/messages',body:{'content':text.text.trim()},authenticated:true);
+      if(!mounted)return;
+      text.clear();
+      await load();
+    }catch(e){
+      if(mounted)setState(()=>error=e.toString());
+    }finally{
+      if(mounted)setState(()=>sending=false);
+    }
+  }
   Future<void> deleteMessage(String messageId)async{try{await widget.api.delete('/conversations/$id/messages/$messageId',authenticated:true);await load();}catch(e){if(mounted)setState(()=>error=e.toString());}}
   bool isOwnMessage(Map<String,dynamic> message)=>message['senderUserId']?.toString()==SessionStore.instance.current?.userId;
   @override Widget build(BuildContext context)=>SafeArea(child:SizedBox(height:MediaQuery.of(context).size.height*.8,child:Column(children:[
