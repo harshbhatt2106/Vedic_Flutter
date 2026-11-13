@@ -17,8 +17,8 @@ React route source: src/routes/AppRoutes.tsx. Admin navigation source: src/layou
 |---:|---|---|---|---|
 | 1 | /admin/dashboard — AdminDashboardPage | KPI cards; 14-day signup series; pending profile preview; recent activity; pending email-change list; approve/reject email change; shortcuts to members, reviews, mentors and activity | GET /api/admin/dashboard; GET /api/admin/profiles/pending; GET /api/admin/activities?take=6; GET /api/admin/email-changes/pending; POST /api/admin/email-changes/{userId}/approve; POST /api/admin/email-changes/{userId}/reject | [~] Implemented; flutter analyze/test passed on code commit 90d99ab788630998160b2db772fcdf338d732d37; live API/device verification pending |
 | 2 | /admin/pending-requests — PendingRequestsPage | Pending/Approved/Rejected tabs; search by name/username; submitted-from/to date filters; clear filters; counts; profile detail; photo content; approve; reject with reason; refresh/retry/loading/error/empty states | GET /api/admin/dashboard; GET /api/admin/profiles/pending?status=&search=&fromDate=&toDate=; GET /api/admin/profiles/{profileId}; GET /api/admin/profiles/{profileId}/photos/{photoId}/content; PUT /api/admin/profiles/{profileId}/approve; PUT /api/admin/profiles/{profileId}/reject | [~] Native queue/detail/actions implemented; CI passed; live API/device verification pending |
-| 3 | /admin/users — UsersPage | Paginated members; search; role/gender/profile-completion/active/role/gender/profile-completion/active filters; search; paginated profile cards; profile detail and primary photo; activate/deactivate with confirmation; assign/remove mentor; retry/error/empty states. The web page does not render a city filter or user-delete button. | GET /api/admin/users?page=&pageSize=&search=&role=&gender=&isProfileComplete=&isActive=; GET /api/admin/profiles/{profileId}; GET /api/admin/users/{userId}/primary-photo; GET /api/admin/users?role=Mentor&pageSize=500; POST /api/admin/user-mentor-assignments; DELETE /api/admin/user-mentor-assignments/{userId}/{mentorUserId}; PUT /api/admin/users/{userId}/activate; PUT /api/admin/users/{userId}/deactivate. Backend additionally supports city query filtering and DELETE /api/admin/users/{userId} soft-delete, but neither is exposed by this React page. | [~] Native list, filters, pagination, profile view, mentor assignment and active-state actions implemented; CI passed; live API/device verification pending |
-| 4 | /admin/activities — ActivitiesPage | Up to 100 audit entries; client-side text search; activity type/action/entity filters; All/Today/Last 7 Days/Last 30 Days date presets; refresh; row opens detail panel | GET /api/admin/activities?take=100; backend normalizes invalid take to 100 and supports up to 500 | [ ] Not implemented |
+| 3 | /admin/users — UsersPage | Paginated members; search; role, account status, gender and profile-completion filters; paginated profile cards; profile detail and primary photo; activate/deactivate with confirmation; assign/remove mentor; retry/error/empty states. The web page does not render a city filter or user-delete button. | GET /api/admin/users?page=&pageSize=&search=&role=&gender=&isProfileComplete=&isActive=; GET /api/admin/profiles/{profileId}; GET /api/admin/users/{userId}/primary-photo; GET /api/admin/users?role=Mentor&pageSize=500; POST /api/admin/user-mentor-assignments; DELETE /api/admin/user-mentor-assignments/{userId}/{mentorUserId}; PUT /api/admin/users/{userId}/activate; PUT /api/admin/users/{userId}/deactivate. Backend additionally supports city query filtering and DELETE /api/admin/users/{userId} soft-delete, but neither is exposed by this React page. | [~] Native list, filters, pagination, profile view, mentor assignment and active-state actions implemented; CI passed; live API/device verification pending |
+| 4 | /admin/activities — ActivitiesPage | Up to 100 audit entries; client-side text search; activity type/action/entity filters; All/Today/Last 7 Days/Last 30 Days date presets; refresh; row opens detail panel | GET /api/admin/activities?take=100; controller resets take outside 1–500 to 100 and repository clamps effective take to 1–200 | [~] Native activity log, client-side search/filters/date presets and safe detail sheet implemented; CI verification pending |
 | 5 | /admin/reports — ReportsPage | Read-only report list; refresh; loading/error/empty states; reporter, reported member, reason and date. No Admin action buttons found. | GET /api/reports (Admin-only). Separate member operations: POST /api/reports/{reportedUserId}, GET /api/reports/my | [ ] Not implemented |
 | 6 | /admin/mentors — MentorManagementPage | Mentor list via Admin users; search; create/edit; active toggle; view mentor profile/location; view assigned members; remove member assignment; delete mentor; mentor photo upload/replace where exposed | GET /api/admin/users?page=1&pageSize=100; POST /api/admin/mentors (multipart); PUT /api/admin/mentors/{userId}; PUT /api/admin/mentors/{userId}/photo (multipart); GET /api/admin/mentors/{mentorUserId}/location; GET /api/admin/mentors/{mentorUserId}/members; DELETE /api/admin/user-mentor-assignments/{userId}/{mentorUserId}; DELETE /api/admin/mentors/{userId}; location selectors use GET /api/locations/countries, /states?countryId=, /cities?stateId= | [ ] Not implemented |
 | 7 | /admin/mentor-assignments — AdminMentorAssignmentsPage | Mentor request list; search name/mobile/mentor; Pending/Fulfilled/Rejected/All filters; assign pending request; mentor member-count list; loading/empty/error feedback | GET /api/admin/mentor-user-requests; POST /api/admin/mentor-user-requests/{requestId}/assign; GET /api/admin/mentor-stats | [ ] Not implemented |
@@ -51,7 +51,7 @@ React route source: src/routes/AppRoutes.tsx. Admin navigation source: src/layou
 - ReportsController requires authentication globally; GET /api/reports explicitly requires role Admin.
 - PrivacyPolicyController exposes user policy acceptance; Admin policy management is in AdminController.
 - MentorController is Mentor-role protected; it is not the Admin mentor-management API.
-- Flutter ApiClient supports authenticated JSON GET/POST/PUT, 401 refresh retry and authenticated binary GET. multipart upload and a formal query-parameter helper remain to be added when their pages require them.
+- Flutter ApiClient supports authenticated JSON GET/POST/PUT/DELETE, 401 refresh retry and authenticated binary GET. Multipart upload remains to be added for mentor photo forms. Query parameters are currently encoded with Uri(queryParameters: ...) at each screen.
 - API root is already configured as https://vedicvivah.co.in/api. No base URL change is required.
 
 ## 4. Verified DTOs and persistence entities
@@ -63,6 +63,7 @@ Verified DTOs:
 - AdminPendingProfileDto: profile ID, user ID/name, email, first/last name, gender, date of birth, profession, education, city, about-me, rejection reason, approval status and created time.
 - AdminProfileReviewDto: Profile, Photos and RelativeContacts.
 - AdminUserDto: user ID/name/mobile/email, role, email/mobile verification, active/deleted, created time, profile ID, names, gender, profession, education, approval/visibility status, profile-complete flag, DOB, city, religion and mentor details.
+- AuditLogDto: id, actorUserId, actorUserName, activityType, action, entityType, entityId, entityName, detailsJson, ipAddress and createdAtUtc. Current repository projection sets entityName to null. The web Activity Log searches/filters client-side over the latest 100 records; search fields include action, activity type, entity type, entity ID/name, actor ID/name and IP address. Detail JSON excludes top-level password, OTP, accessToken, refreshToken and secretKey fields.
 - SubscriptionPlanDto/CreatePlanRequest fields are reflected in page 9.
 - Success story request fields include husband/wife names, married date, message, published flag and optional linked user IDs.
 - Support reply body is { reply }; backend rejects blank replies.
@@ -82,17 +83,17 @@ Persistence entity names present in the audited backend branch include User, Use
 ## 6. Flutter starting state and baseline defect
 
 - Admin feature folders exist with .gitkeep placeholders for dashboard, users, pending requests, activities, mentor management/assignments, master data, subscription plans, privacy policy, reports, success stories, support and settings.
-- No native Admin screens currently exist. AuthRoleLandingScreen shows a generic Admin Dashboard placeholder.
+- Admin shell, dashboard, Profile Reviews, Members and Activity Log native screens now exist. Reports and remaining Admin modules are still explicit not-implemented destinations.
 - Shared infrastructure already present: ApiClient, AppConfig, secure SessionStore, auth repository and maroon/cream/gold theme.
-- Baseline CI on starting HEAD fails at flutter analyze: registration_screen.dart line 166 constructs LoginScreen without its required apiClient. Fix this before treating subsequent CI results as valid.
+- Baseline CI on starting HEAD failed at flutter analyze because registration_screen.dart line 166 constructed LoginScreen without its required apiClient. This defect has been fixed and the current auth routing passes CI.
 
 ## 7. Implementation checklist
 
 ### Foundation and navigation
-- [ ] Fix registration-to-login apiClient analyzer error.
-- [ ] Add Admin role routing without changing User or Mentor routing.
-- [ ] Build mobile-first Admin shell/navigation drawer and sign-out.
-- [ ] Extend authenticated API support for GET/POST/PUT/DELETE, query parameters, multipart upload and protected binary media; test each method.
+- [x] Fix registration-to-login apiClient analyzer error.
+- [x] Add Admin role routing without changing User or Mentor routing.
+- [x] Build mobile-first Admin shell/navigation drawer and sign-out.
+- [~] Extend authenticated API support for GET/POST/PUT/DELETE and protected binary media. Multipart upload and API request tests remain.
 - [ ] Add Admin DTO parsing and reusable loading/error/empty/retry states.
 
 ### Screens
@@ -100,7 +101,7 @@ Persistence entity names present in the audited backend branch include User, Use
 - [~] Profile Reviews — status tabs, search/date filters, detail/photos, approve/reject validation implemented; response-model unit tests and GitHub Actions passed; live Admin API/device verification pending.
 - [~] Members — paginated real API list, search, role/status/gender/completion filters, profile view, primary photos, mentor assignment/removal and activate/deactivate implemented; model tests and GitHub Actions passed; live Admin API/device verification pending.
 - [~] Members — pagination/search/filters, detail/photo, mentor assignment, activate/deactivate confirmation. City filter and user deletion are not exposed by the React page and are intentionally omitted.
-- [ ] Activity Log — search, filters, date presets and detail view.
+- [~] Activity Log — latest 100 records, search, activity/action/entity filters, date presets, refresh and detail sheet with sensitive-key filtering; CI verification pending.
 - [ ] Reports — real Admin report list and refresh.
 - [ ] Mentor Management — create/edit/photo/status/location/member list/remove assignment/delete.
 - [ ] Mentor Requests — search/status/assign and mentor counts.
@@ -118,12 +119,14 @@ Persistence entity names present in the audited backend branch include User, Use
 ### Verification gates
 - [x] Unit tests for profile-review DTO parsing passed in GitHub Actions run 43388786654.
 - [x] Unit tests for Admin member DTO parsing passed in GitHub Actions run 43389540629.
+- [x] Unit tests for Admin audit log DTO parsing passed in GitHub Actions run 43389965429.
 - [ ] API request tests for authenticated PUT and binary GET.
 - [ ] Widget tests for loading/error/empty/success states, navigation, dialogs and forms.
 - [ ] Verify operations against real API using an Admin session; mocks do not count as integration completion.
 - [ ] Android build and device smoke test on representative screen sizes.
 - [ ] Verify every control works and no overflow/clipping occurs.
-- [x] flutter pub get, flutter analyze and flutter test passed in GitHub Actions run 43387728552 for code commit 90d99ab788630998160b2db772fcdf338d732d37.
+- [x] flutter pub get, flutter analyze and flutter test passed in GitHub Actions run 43389540629 for code commit 902f4165f11853bd5920fad7f4a8e16038d5a528.
+- [ ] Latest Activity Log implementation CI run is still pending; do not mark this screen complete until it passes.
 - [ ] Android build and physical-device smoke test; not run in this environment.
 - [ ] Live API verification using a real Admin account; not run.
 - [ ] Update this audit with evidence for every completed feature and exact remaining blockers.
@@ -133,5 +136,5 @@ Persistence entity names present in the audited backend branch include User, Use
 **React Admin route/sidebar inventory:** first pass completed.  
 **Backend Admin route/authorization inventory:** first pass completed for AdminController, LocationController, ReferenceDataController, SubscriptionPlansController, PrivacyPolicyController, ReportsController and MentorController.  
 **Field-by-field DTO, validation, business-rule and EF relationship audit:** in progress; this file does not claim that every rule has been reviewed.  
-**Flutter Admin implementation:** in progress; Admin shell, dashboard and Profile Reviews queue/detail/decision flow are pushed. CI analyze/tests pass through commit f68294899cf3daae0dac3a3e971cd05e5e0c810d; live API and Android device verification are pending.  
-**Features marked complete:** none yet, because no live Admin-session or Android device verification has been completed. Dashboard and Profile Reviews are implemented in code; GitHub Actions analyze/test passed for the recorded commit. Android device and live Admin API verification remain outstanding.
+**Flutter Admin implementation:** in progress; Admin shell, dashboard, Profile Reviews, Members and Activity Log are pushed. CI analyze/tests pass through commit 902f4165f11853bd5920fad7f4a8e16038d5a528 for Members/Profile Reviews; Activity Log verification is pending. Live API and Android device verification remain outstanding.  
+**Features marked complete:** none yet, because no live Admin-session or Android device verification has been completed. Dashboard, Profile Reviews and Members are implemented in code with passing GitHub Actions analyze/test runs. Activity Log is implemented in code and awaiting its CI result. Android device and live Admin API verification remain outstanding.
