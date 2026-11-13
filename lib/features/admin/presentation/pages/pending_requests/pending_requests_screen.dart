@@ -20,6 +20,7 @@ class _PendingRequestsScreenState extends State<PendingRequestsScreen> {
   DateTime? _fromDate;
   DateTime? _toDate;
   Timer? _searchTimer;
+  final TextEditingController _searchController = TextEditingController();
   bool _loading = true;
   String? _error;
   List<AdminQueueProfile> _profiles = [];
@@ -36,6 +37,7 @@ class _PendingRequestsScreenState extends State<PendingRequestsScreen> {
   @override
   void dispose() {
     _searchTimer?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -209,12 +211,14 @@ class _PendingRequestsScreenState extends State<PendingRequestsScreen> {
           ),
           const SizedBox(height: 12),
           TextField(
+            controller: _searchController,
             onChanged: _onSearchChanged,
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
               hintText: 'Search name or username',
               prefixIcon: const Icon(Icons.search, color: AppPalette.secondary),
               suffixIcon: _search.isEmpty ? null : IconButton(onPressed: () {
+                _searchController.clear();
                 setState(() => _search = '');
                 _load();
               }, icon: const Icon(Icons.close)),
@@ -239,6 +243,7 @@ class _PendingRequestsScreenState extends State<PendingRequestsScreen> {
               alignment: Alignment.centerRight,
               child: TextButton.icon(
                 onPressed: () {
+                  _searchController.clear();
                   setState(() { _fromDate = null; _toDate = null; _search = ''; });
                   _load();
                 },
