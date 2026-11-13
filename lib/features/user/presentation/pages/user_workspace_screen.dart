@@ -76,7 +76,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         final r=await widget.api.get('/partner-preferences',authenticated:true); final raw=r['data'];
         if(raw is Map){data=Map<String,dynamic>.from(raw);choice=data['preferredGender']?.toString()??choice;marital=data['maritalStatus']?.toString()??marital;final age=data['age'];if(age is Map){a.text=age['minAge']?.toString()??'';b.text=age['maxAge']?.toString()??'';}
           c.text=data['additionalRequirements']?.toString()??'';
-          for(final group in ['height','community','career','location']){final value=data[group];if(value is Map){for(final entry in value.entries){if(prefFields.containsKey(entry.key))prefFields[entry.key]!.text=entry.value?.toString()??'';}}}await _loadPreferenceOptions();}
+          for(final group in ['height','community','career','location']){final value=data[group];if(value is Map){for(final entry in value.entries){if(prefFields.containsKey(entry.key))prefFields[entry.key]!.text=entry.value?.toString()??'';}}}final height=data['height'];if(height is Map){prefFields['minHeightFeet']!.text=height['minFeet']?.toString()??'';prefFields['minHeightInches']!.text=height['minInches']?.toString()??'';prefFields['maxHeightFeet']!.text=height['maxFeet']?.toString()??'';prefFields['maxHeightInches']!.text=height['maxInches']?.toString()??'';}await _loadPreferenceOptions();}
       } else if(widget.kind=='messages'){
         final r=await widget.api.get('/conversations',authenticated:true);final raw=r['data'];
         items=raw is List?raw.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];
