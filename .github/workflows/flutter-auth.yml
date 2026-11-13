@@ -19,4 +19,8 @@ jobs:
       - run: flutter analyze --no-fatal-infos
       - run: flutter test
       - run: flutter create --platforms=android --no-pub .
-      - run: flutter build apk --debug --verbose
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: flutter build apk --debug
