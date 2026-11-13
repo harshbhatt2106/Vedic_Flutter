@@ -27,7 +27,7 @@ class ChatRealtimeService {
       if(arguments==null||arguments.length<2)return;
       onMessageDeleted(arguments[0].toString(),arguments[1].toString());
     });
-    connection.onreconnected((_) async {
+    connection.onreconnected(({connectionId}) async {
       final conversationId=_joinedConversationId;
       if(conversationId!=null){await connection.invoke('JoinConversation',args:<Object>[conversationId]);}
     });
