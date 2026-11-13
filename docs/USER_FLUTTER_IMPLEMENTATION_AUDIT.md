@@ -10,7 +10,7 @@
 |---|---|---|---|
 | Web frontend | harshbhatt2106/vedicvivah-frontend | FainalFrontend | 8850d016c92747477663b549e52c9fa2c416535e |
 | Backend | harshbhatt2106/vedicvivah-backend | FainalBak | 3955f39cf8977d2563fa5e07204604e5ed90b6b7 |
-| Flutter target | harshbhatt2106/Vedic_Flutter | flutter-development | 902f4165f11853bd5920fad7f4a8e16038d5a528 |
+| Flutter target | harshbhatt2106/Vedic_Flutter | flutter-development | 89798f453cebbabb80b1ba498178ebadea3b4905 |
 
 ## 2. Initial findings
 
@@ -471,3 +471,53 @@ This route is not just a static preference form. The web page combines saved par
 
 **Architecture gate:** Before feature implementation, add/test the missing PATCH and multipart transport paths, then establish User navigation without replacing the existing Admin shell. SignalR/push/media requirements must be handled only with compatible dependencies and verified platform configuration.
 
+
+
+## 15. Audit checkpoint — 2026-11-13
+
+**Current Flutter branch head verified:** `89798f453cebbabb80b1ba498178ebadea3b4905` (`feat(admin): add hierarchical location master model`). The source revision in this register has been refreshed to this branch head.
+
+### 15.1 User source inventory re-verified against the current branch
+
+The recursive tree under `lib/features/user` contains 34 entries, but only one Dart page implementation is present:
+- `presentation/pages/dashboard/user_dashboard_screen.dart`
+
+The following User page directories contain only `.gitkeep` placeholders:
+- account settings
+- blocked users
+- discover matches
+- interests
+- messages
+- my reports
+- notifications
+- partner preferences
+- profile
+- shortlist
+- subscriptions
+- support
+
+This confirms that these are not implemented native screens yet. Their folder existence must not be counted as feature parity.
+
+### 15.2 Dashboard code inspection — additional confirmed gaps
+
+The current Flutter dashboard:
+- Fetches own profile, own photos, shortlists, recent notifications and user references.
+- Displays a profile summary/status, locally calculated biodata strength, three statistic tiles, recent notifications and shortlist previews.
+- Exposes refresh and sign-out actions.
+
+Compared with the web dashboard behavior recorded above, the current Flutter dashboard does not yet expose the web navigation actions for Find Matches, View/Edit Profile, Create Biodata, section-specific profile completion, Shortlisted, and Notifications. The statistic tiles and preview list items currently have no navigation callbacks. It also does not load the web dashboard's match preview or public success-story content. Treat dashboard parity as PARTIAL, not COMPLETE.
+
+### 15.3 Transport/navigation blockers re-confirmed
+
+- `ApiClient` has JSON GET/POST/PUT/DELETE and protected byte GET; no JSON PATCH method is exposed.
+- Multipart support is limited to POST in the inspected client; profile section updates require PATCH and account/profile photo upload contracts include multipart PUT.
+- Current app navigation is not yet a complete User route shell; only the dashboard is evidenced as an implemented User page.
+- The current User feature subtree does not evidence native SignalR chat, push-notification registration, protected profile gallery UI or the User page flows listed in the route inventory.
+
+### 15.4 Implementation decision
+
+The User Panel is **not at feature parity**. Continue the per-page web control and backend DTO/validation audit before implementation, as required by the implementation gate in this document. Implement one User route at a time after its contract is traced. Keep Admin and Mentor screens outside this task and preserve their existing behavior.
+
+### 15.5 Verification limitations
+
+This checkpoint is based on static GitHub source inspection. Flutter CLI analysis, tests, Android build, physical-device testing and authenticated live API tests have not been run. No runtime pass or 100% parity claim is made.
