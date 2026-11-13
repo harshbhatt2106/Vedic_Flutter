@@ -258,7 +258,11 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
       OutlinedButton.icon(onPressed:working?null:openDiscoverFilters,icon:const Icon(Icons.tune),label:Text(activeDiscoverFilterCount==0?'Filters':'Filters ($activeDiscoverFilterCount)')),
     ])),
     if(items.isEmpty)panel(const Text('No profiles found. Complete your profile and try again.')),
-    if(discoverPage<totalPages)button('Load more profiles',(){ discoverPage++; load(); }),
+    if(totalPages>1)Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[
+      OutlinedButton(onPressed:working||discoverPage<=1?null:(){discoverPage--;load();},child:const Text('Previous')),
+      Text('Page $discoverPage of $totalPages',style:const TextStyle(color:AppPalette.secondary)),
+      FilledButton(onPressed:working||discoverPage>=totalPages?null:(){discoverPage++;load();},child:const Text('Next')),
+    ]),
     ...items.map((p){
        final id=(p['userId']??p['id']??'').toString();
        final name=(''+(p['firstName']??'').toString()+' '+(p['lastName']??'').toString()).trim();
