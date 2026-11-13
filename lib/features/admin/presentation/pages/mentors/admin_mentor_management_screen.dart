@@ -327,7 +327,7 @@ class AdminMentorProfileSheet extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(mentor.displayName, style: Theme.of(context).textTheme.titleLarge),
-              Text('Mentor account', style: const TextStyle(fontFamily: 'sans-serif', fontSize: 11, color: AppPalette.secondary)),
+              const Text('Mentor account', style: TextStyle(fontFamily: 'sans-serif', fontSize: 11, color: AppPalette.secondary)),
             ])),
           ]),
           const SizedBox(height: 18),
@@ -415,7 +415,7 @@ class _AdminMentorMembersSheetState extends State<AdminMentorMembersSheet> {
         ],
       ),
     );
-    if (confirmed != true || _busy) return;
+    if (confirmed != true || _busy || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _busy = true);
     try {
