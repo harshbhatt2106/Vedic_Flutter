@@ -140,6 +140,10 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
       final list=discoveryOptions[key]??const <Map<String,dynamic>>[];final current=int.tryParse(filters[key]!.text);final value=list.any((x)=>(x['id'] as num?)?.toInt()==current)?current:null;
       return SizedBox(width:150,child:DropdownButtonFormField<int>(initialValue:value,isExpanded:true,decoration:InputDecoration(labelText:label,filled:true,isDense:true),items:list.map((x)=>DropdownMenuItem<int>(value:(x['id'] as num).toInt(),child:Text(x['name'].toString(),overflow:TextOverflow.ellipsis))).toList(),onChanged:(v)=>_changeDiscoverFilter(key,v?.toString())));
     }
+    if(key=='motherTongue'){
+      final list=discoveryOptions[key]??const <Map<String,dynamic>>[];final current=filters[key]!.text;
+      return SizedBox(width:150,child:DropdownButtonFormField<String>(initialValue:list.any((x)=>x['name']?.toString()==current)?current:null,isExpanded:true,decoration:InputDecoration(labelText:label,filled:true,isDense:true),items:list.map((x)=>DropdownMenuItem<String>(value:x['name'].toString(),child:Text(x['name'].toString(),overflow:TextOverflow.ellipsis))).toList(),onChanged:(v)=>_changeDiscoverFilter(key,v)));
+    }
     if(key=='preferredGender'||key=='maritalStatus'){
       final choices=key=='preferredGender'?['Male','Female','Any']:['Never Married','Divorced','Widowed','Any'];
       final current=filters[key]!.text;return SizedBox(width:150,child:DropdownButtonFormField<String>(initialValue:choices.contains(current)?current:null,isExpanded:true,decoration:InputDecoration(labelText:label,filled:true,isDense:true),items:choices.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>_changeDiscoverFilter(key,v)));
@@ -150,7 +154,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     try{final r=await widget.api.get(path,authenticated:true);final d=r['data'];discoveryOptions[key]=d is List?d.whereType<Map>().map((raw){final x=Map<String,dynamic>.from(raw);if(path.contains('/locations/countries'))return {'id':x['countryId'],'name':x['countryName']};if(path.contains('/locations/states'))return {'id':x['stateId'],'name':x['stateName']};if(path.contains('/locations/cities'))return {'id':x['cityId'],'name':x['cityName']};return x;}).toList():[];}catch(_){discoveryOptions[key]=[];}
   }
   Future<void> _loadDiscoveryOptions()async{
-    for(final e in {'religionId':'/reference-data/religions','educationFieldId':'/reference-data/education-fields','qualificationId':'/reference-data/qualifications','occupationId':'/reference-data/occupations','countryId':'/locations/countries'}.entries){await _fetchDiscoverOptions(e.key,e.value);}
+    for(final e in {'religionId':'/reference-data/religions','motherTongue':'/reference-data/mother-tongues','educationFieldId':'/reference-data/education-fields','qualificationId':'/reference-data/qualifications','occupationId':'/reference-data/occupations','countryId':'/locations/countries'}.entries){await _fetchDiscoverOptions(e.key,e.value);}
     final religion=int.tryParse(filters['religionId']!.text),caste=int.tryParse(filters['casteId']!.text),education=int.tryParse(filters['educationFieldId']!.text),occupation=int.tryParse(filters['occupationId']!.text),country=int.tryParse(filters['countryId']!.text),state=int.tryParse(filters['stateId']!.text);
     if(religion!=null)await _fetchDiscoverOptions('casteId','/reference-data/castes?religionId=$religion');
     if(caste!=null)await _fetchDiscoverOptions('subCasteId','/reference-data/sub-castes?casteId=$caste');
@@ -168,6 +172,10 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     final child=next[key];if(child!=null&&id!=null){final route=switch(key){'religionId'=>'/reference-data/castes?religionId=$id','casteId'=>'/reference-data/sub-castes?casteId=$id','educationFieldId'=>'/reference-data/courses?educationFieldId=$id','occupationId'=>'/reference-data/professions?occupationId=$id','countryId'=>'/locations/states?countryId=$id',_=>'/locations/cities?stateId=$id'};await _fetchDiscoverOptions(child,route);}
     if(mounted)setState((){});
   }
+  Future<void> clearDiscoverFilters()async{
+    for(final controller in [a,b,c,...filters.values]){controller.clear();}
+    discoverPage=1;items=[];await load();
+  }
   List<Widget> discover()=>[
     panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       field('Name or keyword',a),
@@ -184,7 +192,11 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         filterField('Education field ID','educationFieldId',numeric:true),filterField('Course ID','courseId',numeric:true),filterField('Qualification ID','qualificationId',numeric:true),
         filterField('Occupation ID','occupationId',numeric:true),filterField('Profession ID','professionId',numeric:true),filterField('Work type','workType'),
       ]),
-      button('Apply filters',(){ discoverPage=1; load(); }),
+      Row(children:[
+        Expanded(child:FilledButton(onPressed:working?null:(){discoverPage=1;load();},child:const Text('Apply filters'))),
+        const SizedBox(width:8),
+        OutlinedButton(onPressed:working?null:clearDiscoverFilters,child:const Text('Clear all')),
+      ]),
     ])),
     if(items.isEmpty)panel(const Text('No profiles found. Complete your profile and try again.')),
     if(discoverPage<totalPages)button('Load more profiles',(){ discoverPage++; load(); }),
