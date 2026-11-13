@@ -140,6 +140,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         Text(name.isEmpty?'VedicVivah member':name,style:const TextStyle(fontWeight:FontWeight.w700,color:AppPalette.darkMaroon,fontSize:16)),
         if(details.isNotEmpty)Text(details,style:const TextStyle(color:AppPalette.secondary,fontSize:12)),
         if((p['aboutMe']??'').toString().isNotEmpty)Text(p['aboutMe'].toString(),maxLines:2,overflow:TextOverflow.ellipsis),
+        TextButton.icon(onPressed:working||id.isEmpty?null:()=>_viewProfile(id),icon:const Icon(Icons.person_search),label:const Text('View full profile')), 
         Row(children:[Expanded(child:TextButton(onPressed:working||id.isEmpty?null:()=>run(()async{await widget.api.post('/shortlists/'+id,body:{},authenticated:true);setState(()=>notice='Profile added to shortlist.');}),child:const Text('Shortlist'))),Expanded(child:FilledButton(onPressed:working||id.isEmpty?null:()=>run(()async{await widget.api.post('/interests/'+id,body:{},authenticated:true);setState(()=>notice='Interest sent.');}),child:const Text('Send interest')))]),
         Wrap(spacing:8,children:[
           TextButton(onPressed:working||id.isEmpty?null:()=>_report(id),child:const Text('Report')),
@@ -148,6 +149,22 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
       ])));
     }),
   ];
+  Future<void> _viewProfile(String userId) async {
+    showModalBottomSheet(context:context,isScrollControlled:true,builder:(ctx)=>FutureBuilder<Map<String,dynamic>>(
+      future:widget.api.get('/user-profile/$userId',authenticated:true).then((r)=>r['data'] is Map?Map<String,dynamic>.from(r['data']):<String,dynamic>{}),
+      builder:(context,snapshot){
+        if(snapshot.connectionState!=ConnectionState.done)return const SizedBox(height:260,child:Center(child:CircularProgressIndicator()));
+        if(snapshot.hasError)return SizedBox(height:220,child:Center(child:Text(snapshot.error.toString())));
+        final p=snapshot.data??{};
+        final fields=<String,String>{'Age':p['dateOfBirth']?.toString()??'','Gender':p['gender']?.toString()??'','Religion':p['religionName']?.toString()??'','Caste':p['casteName']?.toString()??'','Sub-caste':p['subCasteName']?.toString()??'','Education':p['education']?.toString()??'','Profession':p['profession']?.toString()??'','Location':p['cityName']?.toString()??'','Marital status':p['maritalStatus']?.toString()??'','About':p['aboutMe']?.toString()??''};
+        return SafeArea(child:Padding(padding:const EdgeInsets.all(18),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text('${p['firstName']??'VedicVivah'} ${p['lastName']??'member'}',style:const TextStyle(fontSize:22,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),
+          const SizedBox(height:12),Flexible(child:ListView(shrinkWrap:true,children:fields.entries.where((e)=>e.value.isNotEmpty).map((e)=>Padding(padding:const EdgeInsets.symmetric(vertical:5),child:Text('${e.key}: ${e.value}'))).toList())),
+          SizedBox(width:double.infinity,child:FilledButton(onPressed:()=>Navigator.pop(context),child:const Text('Close'))),
+        ])));
+      },
+    ));
+  }
   Future<void> _report(String userId) async {
     final reason=TextEditingController();
     final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Report profile'),content:TextField(controller:reason,maxLines:3,decoration:const InputDecoration(hintText:'Describe the issue')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Submit'))]));
