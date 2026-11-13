@@ -47,7 +47,8 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     setState(() { loading=true; error=null; });
     try {
       if(widget.kind=='discover'){
-        final query=Uri(queryParameters:{if(a.text.trim().isNotEmpty)'search':a.text.trim(),if(b.text.trim().isNotEmpty)'minAge':b.text.trim(),if(c.text.trim().isNotEmpty)'maxAge':c.text.trim(),if(d.text.trim().isNotEmpty)'religionId':d.text.trim(),if(e.text.trim().isNotEmpty)'casteId':e.text.trim(),'pageNumber':'1','pageSize':'20'}).query;\n        final r=await widget.api.get('/user-profile/discover?'+query,authenticated:true);
+        final query=Uri(queryParameters:{if(a.text.trim().isNotEmpty)'search':a.text.trim(),if(b.text.trim().isNotEmpty)'minAge':b.text.trim(),if(c.text.trim().isNotEmpty)'maxAge':c.text.trim(),if(d.text.trim().isNotEmpty)'religionId':d.text.trim(),if(e.text.trim().isNotEmpty)'casteId':e.text.trim(),'pageNumber':'1','pageSize':'20'}).query;
+        final r=await widget.api.get('/user-profile/discover?'+query,authenticated:true);
         final raw=r['data']; final list=raw is Map?raw['items']:raw;
         items=list is List?list.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];
       } else if(widget.kind=='profile'){
