@@ -96,7 +96,7 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
     Text(title,style:const TextStyle(fontSize:16,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),const SizedBox(height:10),...children,
     SizedBox(width:double.infinity,child:OutlinedButton(onPressed:busy?null:()=>run(save),child:Text('Save $title'))),
   ])));
-  Future<void> load()async{setState(()=>{loading=true,error=null});try{final r=await widget.apiClient.get('/user-profile',authenticated:true);final d=r['data'];if(d is Map){profile=Map<String,dynamic>.from(d);for(final k in keys){fields[k]!.text=profile[k]?.toString()??'';}if(fields['dateOfBirth']!.text.startsWith('0001-'))fields['dateOfBirth']!.clear();await loadMasterData();}}catch(e){error=e.toString();}finally{if(mounted)setState(()=>loading=false);}}
+  Future<void> load()async{setState(() { loading=true; error=null; });try{final r=await widget.apiClient.get('/user-profile',authenticated:true);final d=r['data'];if(d is Map){profile=Map<String,dynamic>.from(d);for(final k in keys){fields[k]!.text=profile[k]?.toString()??'';}if(fields['dateOfBirth']!.text.startsWith('0001-'))fields['dateOfBirth']!.clear();await loadMasterData();}}catch(e){error=e.toString();}finally{if(mounted)setState(()=>loading=false);}}
   Future<void> loadMasterData()async{
     final base=<String,String>{
       'religionId':'/reference-data/religions','motherTongueId':'/reference-data/mother-tongues',
@@ -114,7 +114,7 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
     if(birthCountry!=null)await fetchOptions('birthStateId','/locations/states?countryId=$birthCountry');
     if(birthState!=null)await fetchOptions('birthCityId','/locations/cities?stateId=$birthState');
   }
-  Future<void> run(Future<void> Function() fn)async{setState(()=>{busy=true,error=null,notice=null});try{await fn();if(mounted)setState(()=>notice='Changes saved successfully.');await load();}catch(e){if(mounted)setState(()=>error=e.toString());}finally{if(mounted)setState(()=>busy=false);}}
+  Future<void> run(Future<void> Function() fn)async{setState(() { busy=true; error=null; notice=null; });try{await fn();if(mounted)setState(()=>notice='Changes saved successfully.');await load();}catch(e){if(mounted)setState(()=>error=e.toString());}finally{if(mounted)setState(()=>busy=false);}}
   Future<void> savePersonal()async{
     if(str('firstName')==null||str('dateOfBirth')==null||str('gender')==null)throw Exception('First name, date of birth and gender are required.');
     await widget.apiClient.patch('/user-profile/personal',body:{
