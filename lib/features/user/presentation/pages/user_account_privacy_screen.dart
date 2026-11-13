@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
 
 class UserAccountPrivacyScreen extends StatefulWidget {
-  const UserAccountPrivacyScreen({super.key,required this.apiClient});
+  const UserAccountPrivacyScreen({super.key,required this.apiClient,required this.onSignOut});
   final ApiClient apiClient;
+  final Future<void> Function() onSignOut;
   @override State<UserAccountPrivacyScreen> createState()=>_UserAccountPrivacyScreenState();
 }
 class _UserAccountPrivacyScreenState extends State<UserAccountPrivacyScreen> with SingleTickerProviderStateMixin{
@@ -15,18 +17,23 @@ class _UserAccountPrivacyScreenState extends State<UserAccountPrivacyScreen> wit
     backgroundColor:AppPalette.background,
     appBar:AppBar(backgroundColor:AppPalette.background,title:const Text('Account & privacy',style:TextStyle(color:AppPalette.darkMaroon)),
       bottom:TabBar(controller:tabs,labelColor:AppPalette.maroon,unselectedLabelColor:AppPalette.secondary,indicatorColor:AppPalette.gold,tabs:const [Tab(text:'Account settings'),Tab(text:'Privacy policies')])),
-    body:TabBarView(controller:tabs,children:[_AccountSettingsTab(api:widget.apiClient),_PrivacyPoliciesTab(api:widget.apiClient)]),
+    body:TabBarView(controller:tabs,children:[_AccountSettingsTab(api:widget.apiClient,onSignOut:widget.onSignOut),_PrivacyPoliciesTab(api:widget.apiClient)]),
   );
 }
 
-class _AccountSettingsTab extends StatefulWidget{const _AccountSettingsTab({required this.api});final ApiClient api;@override State<_AccountSettingsTab> createState()=>_AccountSettingsTabState();}
+class _AccountSettingsTab extends StatefulWidget{const _AccountSettingsTab({required this.api,required this.onSignOut});final ApiClient api;final Future<void> Function() onSignOut;@override State<_AccountSettingsTab> createState()=>_AccountSettingsTabState();}
 class _AccountSettingsTabState extends State<_AccountSettingsTab>{
   bool loading=true,busy=false;String? error,notice;String email='',verificationId='';
+  final picker=ImagePicker();final confirmPassword=TextEditingController();
   final first=TextEditingController(),last=TextEditingController(),username=TextEditingController(),newEmail=TextEditingController(),current=TextEditingController(),newPassword=TextEditingController(),otp=TextEditingController();
   @override void initState(){super.initState();load();}
-  @override void dispose(){for(final c in [first,last,username,newEmail,current,newPassword,otp]){c.dispose();}super.dispose();}
+  @override void dispose(){for(final c in [first,last,username,newEmail,current,newPassword,otp,confirmPassword]){c.dispose();}super.dispose();}
   Future<void> load()async{setState(() { loading=true; error=null; });try{final r=await widget.api.get('/account',authenticated:true);final d=r['data'];if(d is Map){first.text=d['firstName']?.toString()??'';last.text=d['lastName']?.toString()??'';username.text=d['userName']?.toString()??'';email=d['email']?.toString()??'';newEmail.text=email;}}catch(e){error=e.toString();}finally{if(mounted)setState(()=>loading=false);}}
   Future<void> run(Future<void> Function() fn)async{setState(() { busy=true; error=null; notice=null; });try{await fn();}catch(e){if(mounted)setState(()=>error=e.toString().replaceFirst('ApiException: ',''));}finally{if(mounted)setState(()=>busy=false);}}
+  Future<void> uploadAccountPhoto() async { final file=await picker.pickImage(source:ImageSource.gallery,imageQuality:88);if(file==null)return;final bytes=await file.readAsBytes();if(bytes.length>5*1024*1024){setState(()=>error='Photo size cannot exceed 5 MB.');return;}final ext=file.name.split('.').last.toLowerCase();if(!['jpg','jpeg','png','webp'].contains(ext)){setState(()=>error='Choose JPG, PNG or WEBP.');return;}await run(()async{await widget.api.putMultipartFile('/account/profile-picture',bytes:bytes,filename:file.name,authenticated:true);setState(()=>notice='Profile picture updated.');});}
+  Future<void> resendEmailOtp() async { if(verificationId.isEmpty)return;await run(()async{await widget.api.post('/account/email-change/resend',body:{'verificationId':verificationId,'newEmail':newEmail.text.trim()},authenticated:true);setState(()=>notice='A new verification code has been sent.');}); }
+  Future<void> deactivate() async { final yes=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Deactivate account?'),content:const Text('Your account will be deactivated. You can no longer use it until it is reactivated by the support team.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Deactivate'))]));if(yes==true){await run(()async{await widget.api.post('/account/deactivate',body:{},authenticated:true);await widget.onSignOut();});}}
+  Future<void> deleteAccount() async { bool married=false;final yes=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(title:const Text('Permanently delete account?'),content:Column(mainAxisSize:MainAxisSize.min,children:[const Text('This permanently deletes your VedicVivah account and associated profile data.'),CheckboxListTile(value:married,onChanged:(v)=>setDialog(()=>married=v??false),title:const Text('I am currently married'))]),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete permanently'))])));if(yes==true){await run(()async{await widget.api.delete('/account?isMarried=$married',authenticated:true);await widget.onSignOut();});}}
   Widget field(String label,TextEditingController c,{bool secret=false})=>Padding(padding:const EdgeInsets.only(bottom:10),child:TextField(controller:c,obscureText:secret,decoration:InputDecoration(labelText:label,filled:true)));
   Widget panel(Widget c)=>Card(color:AppPalette.surface,elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(14),side:const BorderSide(color:AppPalette.border)),child:Padding(padding:const EdgeInsets.all(14),child:c));
   Widget action(String label,VoidCallback fn)=>SizedBox(width:double.infinity,child:FilledButton(onPressed:busy?null:fn,child:Text(label)));
@@ -48,14 +55,24 @@ class _AccountSettingsTabState extends State<_AccountSettingsTab>{
       Text('Current email: '+email),field('New email address',newEmail),field('Current password',current,secret:true),
       action('Send verification code',()=>run(()async{final r=await widget.api.post('/account/email-change',body:{'newEmail':newEmail.text.trim(),'currentPassword':current.text},authenticated:true);final d=r['data'];if(d is Map)verificationId=d['verificationId']?.toString()??'';if(verificationId.isEmpty)throw Exception('The server did not return a verification ID.');setState(()=>notice='Verification code sent. Enter the code below.');})),
       field('6-digit verification code',otp),
+      if(verificationId.isNotEmpty)Align(alignment:Alignment.centerRight,child:TextButton(onPressed:busy?null:resendEmailOtp,child:const Text('Resend code'))),
       action('Verify email change',()=>run(()async{if(otp.text.trim().length!=6)throw Exception('Enter the 6-digit code.');await widget.api.post('/account/email-change/verify',body:{'verificationId':verificationId,'newEmail':newEmail.text.trim(),'otp':otp.text.trim()},authenticated:true);setState(() { notice='Email updated successfully.'; email=newEmail.text.trim(); verificationId=''; otp.clear(); current.clear(); });})),
     ])),
     panel(Column(children:[
       const Text('Change password',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
-      field('Current password',current,secret:true),field('New password',newPassword,secret:true),
-      action('Update password',()=>run(()async{if(newPassword.text.length<8)throw Exception('New password must be at least 8 characters.');await widget.api.put('/account/password',body:{'currentPassword':current.text,'newPassword':newPassword.text},authenticated:true);setState(() { notice='Password changed.'; current.clear(); newPassword.clear(); });})),
+      field('Current password',current,secret:true),field('New password',newPassword,secret:true),field('Confirm new password',confirmPassword,secret:true),
+      action('Update password',()=>run(()async{if(newPassword.text.length<8)throw Exception('New password must be at least 8 characters.');if(newPassword.text!=confirmPassword.text)throw Exception('New password and confirmation do not match.');await widget.api.put('/account/password',body:{'currentPassword':current.text,'newPassword':newPassword.text},authenticated:true);setState(() { notice='Password changed.'; current.clear(); newPassword.clear(); confirmPassword.clear(); });})),
     ])),
-    panel(const Text('Profile photo upload and account deactivation/deletion are not included here yet. They need file-upload and confirmation-flow implementation.',style:TextStyle(fontSize:12,color:AppPalette.secondary))),
+    panel(Column(children:[
+      const Text('Profile picture',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
+      action('Change profile picture',uploadAccountPhoto),
+    ])),
+    panel(Column(children:[
+      const Text('Account security',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
+      action('Deactivate account',deactivate),
+      const SizedBox(height:8),
+      SizedBox(width:double.infinity,child:OutlinedButton(onPressed:busy?null:deleteAccount,style:OutlinedButton.styleFrom(foregroundColor:AppPalette.error),child:const Text('Delete account permanently'))),
+    ])),
   ]));}
 }
 
