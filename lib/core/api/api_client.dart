@@ -22,6 +22,54 @@ class ApiClient {
       _request('PUT', path, body: body, authenticated: authenticated);
   Future<Map<String, dynamic>> delete(String path, {bool authenticated = false}) =>
       _request('DELETE', path, authenticated: authenticated);
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required Map<String, String> fields,
+    bool authenticated = false,
+    bool retryAfterRefresh = true,
+  }) async {
+    try {
+      final request = http.MultipartRequest('POST', AppConfig.endpoint(path))
+        ..headers['Accept'] = 'application/json'
+        ..fields.addAll(fields);
+      final token = _sessionStore.current?.accessToken;
+      if (authenticated && token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      final streamed = await _client.send(request).timeout(_timeout);
+      final response = await http.Response.fromStream(streamed).timeout(_timeout);
+      if (response.statusCode == 401 && authenticated && retryAfterRefresh && !path.startsWith('/auth/')) {
+        if (await _refreshSession()) {
+          return postMultipart(path, fields: fields, authenticated: true, retryAfterRefresh: false);
+        }
+        await _sessionStore.clear();
+        throw const ApiException(message: 'Your session has expired. Please sign in again.', statusCode: 401);
+      }
+      final dynamic decoded = response.body.isEmpty ? <String, dynamic>{} : jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw ApiException(message: 'The server returned an unexpected response.', statusCode: response.statusCode);
+      }
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final message = decoded['message']?.toString().trim();
+        throw ApiException(
+          message: message?.isNotEmpty == true ? message! : _fallbackMessage(response.statusCode),
+          statusCode: response.statusCode,
+          validationErrors: _readValidationErrors(decoded['errors']),
+        );
+      }
+      return decoded;
+    } on ApiException {
+      rethrow;
+    } on ApiConfigurationException catch (error) {
+      throw ApiException(message: error.message);
+    } on TimeoutException {
+      throw const ApiException(message: 'The request timed out. Check your connection and try again.');
+    } on FormatException {
+      throw const ApiException(message: 'The server returned an unreadable response.');
+    } catch (_) {
+      throw const ApiException(message: 'Unable to connect to VedicVivah. Check your internet connection and API address.');
+    }
+  }
 
   Future<Uint8List> getBytes(String path, {bool authenticated = false, bool retryAfterRefresh = true}) async {
     final headers = <String, String>{'Accept': '*/*'};
