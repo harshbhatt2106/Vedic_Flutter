@@ -346,3 +346,98 @@ This route is not just a static preference form. The web page combines saved par
 
 **Flutter parity status:** notifications page/shared notifications directories are placeholders. Dashboard preview only displays recent notifications; it is not a notifications feature implementation. NOT IMPLEMENTED / NOT VERIFIED.
 
+
+
+## 13. Code-level audit findings — account, safety and subscription first pass
+
+### 13.1 Blocked users (/blocked)
+
+**Web source inspected:** BlockedUsersPage.tsx.  
+**Backend source inspected:** BlocksController.cs.
+
+- Web page presents blocked profiles and an Unblock action.
+- Backend exposes GET /blocks, GET /blocks/status/{blockedUserId}, POST /blocks/{blockedUserId}, DELETE /blocks/{blockedUserId}.
+- Flutter blocked-users page directory is placeholder-only.
+- Detailed empty/error states, confirmation behavior and refresh semantics remain to be traced.
+
+**Flutter parity status:** NOT IMPLEMENTED / NOT VERIFIED.
+
+### 13.2 My Reports (/my-reports)
+
+**Web source inspected:** MyReportsPage.tsx.  
+**Backend source inspected:** ReportsController.cs.
+
+- Web route is a read-only list of the current user's submitted reports in the inspected page.
+- Report creation is initiated from profile/match UI through the report modal, not from a visible create button on My Reports.
+- Backend exposes GET /reports/my and POST /reports/{reportedUserId}; Admin-only GET /reports is outside User scope.
+- Flutter My Reports page directory is placeholder-only.
+- Report modal reasons, required fields, duplicate handling and server-side validation still need field-level inspection.
+
+**Flutter parity status:** NOT IMPLEMENTED / NOT VERIFIED.
+
+### 13.3 Account settings (/account/settings)
+
+**Web source inspected:** AccountSettingsPage.tsx.  
+**Backend source inspected:** AccountController.cs.
+
+**Observed UI interactions**
+- Change profile picture: choose file, save, cancel or remove existing picture.
+- Edit first/last name: save/cancel.
+- Edit username: live availability feedback, save/cancel.
+- Change email: enter new email, request OTP, verify six-digit OTP, resend with cooldown, cancel/reset.
+- Change password: current/new/confirm fields, show/hide toggles, update/cancel.
+- Danger zone: delete account multi-step flow with back/cancel/continue; asks marital status before final deletion.
+- User-only My Biodata shortcut navigates to /profile.
+- Embedded mode is supported for Admin profile settings; do not alter Admin behavior when implementing User settings.
+
+**Backend operations confirmed in API mapping**
+- GET /account; GET /account/username-availability?username=...
+- PUT /account/name; PUT /account/username.
+- POST /account/email-change; POST /account/email-change/verify; POST /account/email-change/resend.
+- PUT multipart /account/profile-picture.
+- PUT /account/password.
+- POST /account/deactivate; DELETE /account?isMarried=...
+- Exact DTO fields, validation and email OTP limits must be verified from AccountController and its handlers before implementation.
+
+**Flutter parity status:** account-settings page directory is placeholder-only. NOT IMPLEMENTED / NOT VERIFIED.
+
+### 13.4 Help & Support (/support)
+
+**Web source inspected:** SupportPage.tsx.  
+**Backend source inspected:** SupportController.cs.
+
+- Web page loads the current user's tickets with GET /support/tickets.
+- New ticket submission sends POST /support/tickets with a message.
+- Form validation, max length, ticket status rendering, error and retry behavior still need field-level inspection.
+- Flutter support page directory is placeholder-only.
+
+**Flutter parity status:** NOT IMPLEMENTED / NOT VERIFIED.
+
+### 13.5 My Plan (/plans)
+
+**Web source inspected:** PlansPage.tsx and subscriptionPlansApi.ts.  
+**Backend source inspected:** SubscriptionPlansController.cs.
+
+- Web page loads available plans and the current user's subscription.
+- Plan cards expose Contact Us / support navigation; inspected page does not show a payment initiation action.
+- Expired notice has a Dismiss action.
+- Backend API catalogue exposes GET /subscription-plans and GET /subscription-plans/my-subscription for members.
+- Admin plan management endpoints exist but are out of User scope.
+- No payment gateway initiation, checkout, callback/webhook or transaction-history endpoint was found in the inspected backend controller catalogue. Do not invent a payment flow or claim payment parity.
+- Flutter subscriptions page directory is placeholder-only.
+
+**Flutter parity status:** NOT IMPLEMENTED / NOT VERIFIED. Payment feature is a backend capability gap unless another payment service/controller is found in a later full source scan.
+
+### 13.6 Privacy acceptance (UserLayout modal)
+
+**Web source inspected:** UserLayout.tsx and PrivacyPolicyAcceptancePage.tsx.  
+**Backend source inspected:** PrivacyPolicyController.cs.
+
+- UserLayout checks pending policy acceptance before rendering normal User content.
+- GET /privacy-policy/pending-acceptance retrieves pending policies.
+- POST /privacy-policy/accept-all accepts all pending policies; POST /privacy-policy/{policyId}/accept accepts one.
+- The modal's complete text, scroll-to-end requirements, checkbox/button enablement, error retry and post-accept navigation still need detailed UI audit.
+- Flutter route guard/modal parity is not evidenced by the current User feature tree.
+
+**Flutter parity status:** NOT IMPLEMENTED / NOT VERIFIED.
+
