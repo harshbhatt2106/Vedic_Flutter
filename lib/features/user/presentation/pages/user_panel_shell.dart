@@ -29,7 +29,7 @@ class _UserPanelShellState extends State<UserPanelShell> {
   List<Map<String,dynamic>> _pendingPolicies = [];
   @override void initState(){super.initState();_checkPendingPolicies();}
   Future<void> _checkPendingPolicies() async {
-    if(mounted)setState(()=>{_policyLoading=true,_policyError=null});
+    if(mounted)setState(() { _policyLoading=true; _policyError=null; });
     try {
       final r=await widget.apiClient.get('/privacy-policy/pending-acceptance',authenticated:true);
       if(r['success']==false)throw Exception(r['message']??'Unable to verify policy acceptance.');
@@ -41,10 +41,13 @@ class _UserPanelShellState extends State<UserPanelShell> {
       if(mounted)setState(()=>_policyError=e.toString().replaceFirst('ApiException: ',''));
     } finally { if(mounted)setState(()=>_policyLoading=false); }
   }
+  Future<Map<String,dynamic>?> _safeGet(String path) async {
+    try{return await widget.apiClient.get(path,authenticated:true);}catch(_){return null;}
+  }
   Future<void> _loadAccountAccess() async {
     final results=await Future.wait([
-      widget.apiClient.get('/subscription-plans/my-subscription',authenticated:true).then((v)=>v).catchError((_)=>null),
-      widget.apiClient.get('/user-profile',authenticated:true).then((v)=>v).catchError((_)=>null),
+      _safeGet('/subscription-plans/my-subscription'),
+      _safeGet('/user-profile'),
     ]);
     final subscription=results[0],profile=results[1];
     if(!mounted)return;
