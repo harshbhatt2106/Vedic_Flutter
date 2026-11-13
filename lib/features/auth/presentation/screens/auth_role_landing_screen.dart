@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../admin/presentation/pages/shell/admin_shell_screen.dart';
-import '../../../user/presentation/pages/dashboard/user_dashboard_screen.dart';
+import '../../../user/presentation/pages/user_panel_shell.dart';
 import '../../data/models/auth_models.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'login_screen.dart';
@@ -31,7 +31,7 @@ class AuthRoleLandingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (session.role == 'User') {
-      return UserDashboardScreen(
+      return UserPanelShell(
         apiClient: apiClient,
         session: session,
         onSignOut: () => _signOut(context),
