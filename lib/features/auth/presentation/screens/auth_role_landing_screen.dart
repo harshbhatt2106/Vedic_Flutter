@@ -8,10 +8,10 @@ class AuthRoleLandingScreen extends StatelessWidget {
  const AuthRoleLandingScreen({super.key,required this.repository,required this.apiClient,required this.session});
  final AuthRepository repository; final ApiClient apiClient; final AuthSession session;
  @override Widget build(BuildContext context){
- if(session.role=='User')return UserDashboardScreen(apiClient:apiClient,session:session,onSignOut:() async{
+ if(session.role=='User') { return UserDashboardScreen(apiClient:apiClient,session:session,onSignOut:() async{
  await repository.logout(); if(!context.mounted)return;
  Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder:(_)=>LoginScreen(repository:repository)),(_)=>false);
- });
+ }); }
  final destination=session.role=='Admin'?'Admin Dashboard':'Mentor Dashboard';
  return Scaffold(backgroundColor:const Color(0xFFF7F1E8),body:SafeArea(child:Center(child:Padding(padding:const EdgeInsets.all(28),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[
  const Icon(Icons.verified_user_outlined,size:52,color:Color(0xFFB68A55)),const SizedBox(height:22),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/errors/api_exception.dart';
+import '../../../../core/api/api_client.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../domain/auth_validation.dart';
 import '../widgets/auth_brand_header.dart';
@@ -11,8 +12,9 @@ import 'forgot_password_screen.dart';
 import 'registration_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, required this.repository});
+  const LoginScreen({super.key, required this.repository, required this.apiClient});
   final AuthRepository repository;
+  final ApiClient apiClient;
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -36,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final session = await widget.repository.login(identifier: _identifier.text.trim(), password: _password.text, rememberMe: _rememberMe);
       if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => AuthRoleLandingScreen(repository: widget.repository, session: session)), (_) => false);
+      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => AuthRoleLandingScreen(repository: widget.repository, apiClient: widget.apiClient, session: session)), (_) => false);
     } catch (error) {
       if (!mounted) return;
       setState(() => _error = error is ApiException ? error.message : error.toString().replaceFirst('FormatException: ', ''));

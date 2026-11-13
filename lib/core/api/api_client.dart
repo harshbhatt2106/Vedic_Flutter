@@ -73,8 +73,8 @@ class ApiClient {
     if (raw is! Map) return const {};
     final result=<String,List<String>>{};
     for (final e in raw.entries) {
-      if (e.value is List) result[e.key.toString()] = (e.value as List).map((v)=>v.toString()).toList();
-      else if (e.value != null) result[e.key.toString()] = [e.value.toString()];
+      if (e.value is List) { result[e.key.toString()] = (e.value as List).map((v)=>v.toString()).toList(); }
+      else if (e.value != null) { result[e.key.toString()] = [e.value.toString()]; }
     }
     return result;
   }
