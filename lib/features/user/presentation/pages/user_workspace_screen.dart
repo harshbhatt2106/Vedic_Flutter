@@ -10,9 +10,10 @@ import 'user_profile_editor_screen.dart';
 import '../../data/chat_realtime_service.dart';
 
 class UserWorkspaceScreen extends StatefulWidget {
-  const UserWorkspaceScreen({super.key, required this.apiClient, this.initialTab = 0, this.subscriptionExpired = false, this.approvalRestricted = false, this.onSubscriptionCheck});
+  const UserWorkspaceScreen({super.key, required this.apiClient, this.initialTab = 0, this.subscriptionExpired = false, this.approvalRestricted = false, this.onSubscriptionCheck, required this.onOpenMenu});
   final ApiClient apiClient;
   final int initialTab;
+  final VoidCallback onOpenMenu;
   final bool subscriptionExpired,approvalRestricted;
   final VoidCallback? onSubscriptionCheck;
   @override
@@ -40,7 +41,7 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTi
   }
   @override Widget build(BuildContext context)=>Scaffold(
     backgroundColor:AppPalette.background,
-    appBar:AppBar(backgroundColor:AppPalette.background,title:const Text('Your account',style:TextStyle(color:AppPalette.darkMaroon)),
+    appBar:AppBar(backgroundColor:AppPalette.background,leading:IconButton(tooltip:'Open navigation menu',onPressed:widget.onOpenMenu,icon:const Icon(Icons.menu_rounded,color:AppPalette.maroon)),title:const Text('Your account',style:TextStyle(color:AppPalette.darkMaroon)),
       bottom:TabBar(controller:tabs,isScrollable:true,labelColor:AppPalette.maroon,unselectedLabelColor:AppPalette.secondary,indicatorColor:AppPalette.gold,
         tabs:const [Tab(text:'Find matches'),Tab(text:'Profile'),Tab(text:'Photos'),Tab(text:'Preferences'),Tab(text:'Messages'),Tab(text:'Support'),Tab(text:'Plans'),Tab(text:'References'),Tab(text:'Mentor')])),
     body:TabBarView(controller:tabs,children:[
