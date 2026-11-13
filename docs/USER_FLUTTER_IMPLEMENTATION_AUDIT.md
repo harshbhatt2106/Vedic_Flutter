@@ -621,11 +621,11 @@ The following User-facing implementation is now present on `flutter-development`
 ### Verification and remaining blockers
 
 - On commit `d91e3b859996e2ea310f2ddbdf086f1726283eb5`, `flutter analyze --no-fatal-infos` passed and all 21 existing Flutter tests passed.
-- The first Android build attempt failed because the repository does not track an Android platform runner. CI was changed to generate one before building. The next build attempt failed with a Gradle error that only printed `25.0.5`; a verbose build run is being used to identify the cause.
+- The repository does not track an Android platform runner; CI now generates one temporarily before building. The verbose Gradle trace identified the prior `25.0.5` failure as Kotlin's Java-version parser rejecting the runner's default JDK 25. CI now explicitly installs Temurin JDK 17 before the Android build; the new build run is pending.
 - The generated Android runner currently exists only inside CI, not as committed project files. The exact Play Console Android application ID must be confirmed before committing a permanent Android runner; do not guess it.
 - Firebase configuration is absent from the repository. Native push-token registration/delivery cannot be completed safely without the project's Firebase Android configuration (`google-services.json`) and matching Firebase project setup.
 - Reference-contact city selection still accepts a City ID rather than using the full cascading country/state/city selector.
-- Discover filter ID fields are wired to the backend query but are not all rendered as cascading dropdowns yet.
+- Discover filters now use live cascading selectors for religion/caste/sub-caste, education/course, occupation/profession and country/state/city, plus gender/marital-status dropdowns. Reference contacts now include country/state/city selectors with a manual City ID fallback for editing existing entries.
 - No live authenticated API end-to-end run or physical Android-device test has been performed.
 - Payment initiation remains not applicable to the current backend contract; do not invent a payment flow.
 - **Do not claim 100% parity yet.** Finish the Android build diagnosis, obtain the Android application ID/Firebase config, complete the remaining selector/UI parity, and run authenticated device testing before sign-off.
