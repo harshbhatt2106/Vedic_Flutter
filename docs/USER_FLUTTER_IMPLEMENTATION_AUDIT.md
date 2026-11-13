@@ -441,3 +441,33 @@ This route is not just a static preference form. The web page combines saved par
 
 **Flutter parity status:** NOT IMPLEMENTED / NOT VERIFIED.
 
+
+
+## 14. Flutter foundation audit — navigation and transport
+
+**Flutter sources inspected:** main.dart, vedic_vivah_app.dart, auth_gate.dart, auth_role_landing_screen.dart, api_client.dart, app_config.dart, session_store.dart.
+
+### Navigation
+- MaterialApp currently registers only '/', '/login', '/register' and '/forgot-password'.
+- AuthGate restores the session and sends authenticated users to AuthRoleLandingScreen.
+- AuthRoleLandingScreen sends User directly to UserDashboardScreen and Admin to AdminShellScreen.
+- No User navigation shell, route registry, page stack policy or User destination registration is currently evidenced.
+- The Mentor role currently lands on a generic placeholder screen. This User-panel scope must not accidentally change Admin routing or introduce a broken Mentor route.
+
+**Impact:** User route implementation needs a navigation architecture that supports all discovered User destinations, nested profile sections, dialogs/bottom sheets, profile deep links from interests/messages/notifications and correct back behavior. Dashboard is not sufficient as the only User destination.
+
+### API transport
+- ApiClient currently exposes JSON GET, POST, PUT, DELETE and protected byte GET.
+- It centralizes bearer token attachment, 25-second timeout, structured API error parsing and one in-flight refresh retry for authenticated 401 responses.
+- ApiClient currently does not expose PATCH or multipart upload methods in the inspected source. Backend/web profile section saves use PATCH; profile photo/account picture/mentor photo operations require multipart. These operations cannot be implemented correctly until transport support is added and tested.
+- ApiClient refresh retry is centralized; retain this behavior and do not create per-screen token refresh logic.
+- AppConfig defaults to https://vedicvivah.co.in/api and supports --dart-define=API_BASE_URL; no localhost endpoint is hardcoded in this Flutter config.
+- SessionStore persists encrypted session only when Remember Me is enabled and otherwise retains session in memory. This matches the documented web Remember Me distinction at a high level; device lifecycle and logout edge cases still require tests.
+
+### Flutter dependency and test evidence
+- Current pubspec includes Flutter, http and flutter_secure_storage. No image picker, SignalR client, push-notification/Firebase or multipart-specific package is declared in the current pubspec.
+- Existing test tree contains auth/model unit tests. User feature integration/widget test folders are placeholders.
+- This static source inspection cannot establish successful compilation or runtime behavior. Flutter analyze/test/build remain NOT RUN.
+
+**Architecture gate:** Before feature implementation, add/test the missing PATCH and multipart transport paths, then establish User navigation without replacing the existing Admin shell. SignalR/push/media requirements must be handled only with compatible dependencies and verified platform configuration.
+
