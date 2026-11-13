@@ -34,7 +34,7 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
       field('Height feet','heightFeet',numeric:true),field('Height inches','heightInches',numeric:true),field('Weight (kg)','weight',numeric:true),
     ],()=>savePersonal()),
     section('Religion & community',[
-      field('Religion','religionId'),field('Caste','casteId'),field('Sub-caste','subCasteId'),field('Community','community'),field('Mother tongue','motherTongue'),
+      field('Religion','religionId'),field('Caste','casteId'),field('Sub-caste','subCasteId'),field('Community','community'),field('Mother tongue','motherTongueId'),
     ],()=>saveCommunity()),
     section('Education & career',[
       field('Education','education'),field('Qualification','qualification'),field('Course','course'),field('Occupation','occupation'),field('Profession','profession'),field('Work type','workType'),
