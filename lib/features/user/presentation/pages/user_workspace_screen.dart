@@ -72,6 +72,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   final Set<String> shortlistedIds={};
   final Map<String,String> interestStatuses={};
   final Map<String,Uint8List> discoveryAvatars={};
+  StateSetter? _discoverModalSetState;
   final Map<String,TextEditingController> filters={for(final k in ['religionId','casteId','subCasteId','preferredGender','maritalStatus','motherTongue','education','profession','minYearlyIncome','maxYearlyIncome','minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','countryId','stateId','cityId','educationFieldId','courseId','qualificationId','occupationId','professionId','workType'])k:TextEditingController()};
   int discoverPage=1,totalPages=1;
   String choice='',marital='';
@@ -189,27 +190,37 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     for(final controller in [a,b,c,...filters.values]){controller.clear();}
     discoverPage=1;items=[];await load();
   }
+  int get activeDiscoverFilterCount=>[a,b,c,...filters.values].where((x)=>x.text.trim().isNotEmpty).length;
+  Future<void> openDiscoverFilters()async{
+    await showModalBottomSheet<void>(context:context,isScrollControlled:true,useSafeArea:true,backgroundColor:AppPalette.background,builder:(ctx)=>StatefulBuilder(builder:(ctx,setModalState){
+      _discoverModalSetState=setModalState;
+      return Padding(padding:EdgeInsets.fromLTRB(16,16,16,MediaQuery.of(ctx).viewInsets.bottom+16),child:SizedBox(height:MediaQuery.of(ctx).size.height*.82,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Row(children:[const Expanded(child:Text('Filter matches',style:TextStyle(fontSize:20,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon))),IconButton(onPressed:()=>Navigator.pop(ctx),icon:const Icon(Icons.close))]),
+        Expanded(child:SingleChildScrollView(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          field('Name or keyword',a),
+          Row(children:[Expanded(child:field('Minimum age',b,keyboard:TextInputType.number)),const SizedBox(width:8),Expanded(child:field('Maximum age',c,keyboard:TextInputType.number))]),
+          const Text('Religion & community',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
+          Wrap(spacing:8,runSpacing:8,children:[filterField('Religion','religionId'),filterField('Caste','casteId'),filterField('Sub-caste','subCasteId'),filterField('Mother tongue','motherTongue')]),
+          const SizedBox(height:10),const Text('Personal preferences',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
+          Wrap(spacing:8,runSpacing:8,children:[filterField('Preferred gender','preferredGender'),filterField('Marital status','maritalStatus'),filterField('Min height feet','minHeightFeet',numeric:true),filterField('Min height inches','minHeightInches',numeric:true),filterField('Max height feet','maxHeightFeet',numeric:true),filterField('Max height inches','maxHeightInches',numeric:true)]),
+          const SizedBox(height:10),const Text('Education & career',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
+          Wrap(spacing:8,runSpacing:8,children:[filterField('Education field','educationFieldId'),filterField('Course','courseId'),filterField('Qualification','qualificationId'),filterField('Occupation','occupationId'),filterField('Profession','professionId'),filterField('Education','education'),filterField('Profession text','profession'),filterField('Work type','workType'),filterField('Min yearly income','minYearlyIncome',numeric:true),filterField('Max yearly income','maxYearlyIncome',numeric:true)]),
+          const SizedBox(height:10),const Text('Location',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
+          Wrap(spacing:8,runSpacing:8,children:[filterField('Country','countryId'),filterField('State','stateId'),filterField('City','cityId')]),
+        ]))),
+        Row(children:[
+          Expanded(child:OutlinedButton(onPressed:(){Navigator.pop(ctx);clearDiscoverFilters();},child:const Text('Clear all'))),
+          const SizedBox(width:10),
+          Expanded(child:FilledButton(onPressed:(){Navigator.pop(ctx);discoverPage=1;load();},child:const Text('Apply filters'))),
+        ]),
+      ])));
+    }));
+    _discoverModalSetState=null;
+  }
   List<Widget> discover()=>[
-    panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-      field('Name or keyword',a),
-      Row(children:[Expanded(child:field('Min age',b,keyboard:TextInputType.number)),const SizedBox(width:8),Expanded(child:field('Max age',c,keyboard:TextInputType.number))]),
-      Row(children:[Expanded(child:filterField('Religion','religionId')),const SizedBox(width:8),Expanded(child:filterField('Caste','casteId'))]),
-      const Text('More filters',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
-      Wrap(spacing:8,runSpacing:8,children:[
-        filterField('Sub-caste','subCasteId'),filterField('Preferred gender','preferredGender'),filterField('Marital status','maritalStatus'),
-        filterField('Mother tongue','motherTongue'),filterField('Education','education'),filterField('Profession','profession'),
-        filterField('Min yearly income','minYearlyIncome',numeric:true),filterField('Max yearly income','maxYearlyIncome',numeric:true),
-        filterField('Min height feet','minHeightFeet',numeric:true),filterField('Min height inches','minHeightInches',numeric:true),
-        filterField('Max height feet','maxHeightFeet',numeric:true),filterField('Max height inches','maxHeightInches',numeric:true),
-        filterField('Country ID','countryId',numeric:true),filterField('State ID','stateId',numeric:true),filterField('City ID','cityId',numeric:true),
-        filterField('Education field ID','educationFieldId',numeric:true),filterField('Course ID','courseId',numeric:true),filterField('Qualification ID','qualificationId',numeric:true),
-        filterField('Occupation ID','occupationId',numeric:true),filterField('Profession ID','professionId',numeric:true),filterField('Work type','workType'),
-      ]),
-      Row(children:[
-        Expanded(child:FilledButton(onPressed:working?null:(){discoverPage=1;load();},child:const Text('Apply filters'))),
-        const SizedBox(width:8),
-        OutlinedButton(onPressed:working?null:clearDiscoverFilters,child:const Text('Clear all')),
-      ]),
+    panel(Row(children:[
+      const Expanded(child:Text('Find profiles that match your preferences.',style:TextStyle(color:AppPalette.secondary))),
+      OutlinedButton.icon(onPressed:working?null:openDiscoverFilters,icon:const Icon(Icons.tune),label:Text(activeDiscoverFilterCount==0?'Filters':'Filters ($activeDiscoverFilterCount)')),
     ])),
     if(items.isEmpty)panel(const Text('No profiles found. Complete your profile and try again.')),
     if(discoverPage<totalPages)button('Load more profiles',(){ discoverPage++; load(); }),
