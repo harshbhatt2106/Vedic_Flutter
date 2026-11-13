@@ -1,10 +1,13 @@
-name: Flutter authentication checks
+name: Flutter User Panel checks
 
 on:
   push:
     branches: [flutter-development]
   pull_request:
     branches: [flutter-development]
+
+permissions:
+  contents: write
 
 jobs:
   analyze-and-test:
@@ -15,12 +18,59 @@ jobs:
         with:
           flutter-version: '3.41.5'
           cache: true
-      - run: flutter pub get
-      - run: flutter analyze --no-fatal-infos
-      - run: flutter test
-      - run: flutter create --platforms=android --no-pub .
+      - name: Resolve Flutter dependencies
+        run: flutter pub get
+      - name: Inspect Flutter toolchain
+        run: flutter doctor -v
+      - name: Inspect dependency update status
+        run: flutter pub outdated
+      - name: Analyze Dart code
+        run: flutter analyze --no-fatal-infos
+      - name: Run Flutter tests
+        run: flutter test
+      - name: Generate Android runner with the existing app ID
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --org com.vedicvivah --project-name app --no-pub .
+            git checkout -- pubspec.yaml
+          fi
+
+          sed -i 's/namespace = ".*"/namespace = "com.vedicvivah.app"/' android/app/build.gradle.kts
+          sed -i 's/applicationId = ".*"/applicationId = "com.vedicvivah.app"/' android/app/build.gradle.kts
+          sed -i 's/android:label="[^"]*"/android:label="VedicVivah"/' android/app/src/main/AndroidManifest.xml
+
+          ACTIVITY="$(find android/app/src/main/kotlin -name MainActivity.kt -print -quit)"
+          if [ -n "$ACTIVITY" ]; then
+            mkdir -p android/app/src/main/kotlin/com/vedicvivah/app
+            sed 's/^package .*/package com.vedicvivah.app/' "$ACTIVITY" > android/app/src/main/kotlin/com/vedicvivah/app/MainActivity.kt
+            if [ "$ACTIVITY" != "android/app/src/main/kotlin/com/vedicvivah/app/MainActivity.kt" ]; then
+              rm "$ACTIVITY"
+            fi
+          fi
+
+          grep -q 'namespace = "com.vedicvivah.app"' android/app/build.gradle.kts
+          grep -q 'applicationId = "com.vedicvivah.app"' android/app/build.gradle.kts
+          grep -q 'package com.vedicvivah.app' android/app/src/main/kotlin/com/vedicvivah/app/MainActivity.kt
+      - name: Commit permanent Android runner to the existing branch
+        if: github.event_name == 'push'
+        run: |
+          git add android
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "build(android): add Flutter Android runner"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - run: flutter build apk --debug
+      - name: Build Android debug APK
+        run: flutter build apk --debug
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: vedicvivah-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
