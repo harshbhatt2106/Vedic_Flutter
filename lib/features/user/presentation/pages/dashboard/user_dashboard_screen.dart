@@ -5,8 +5,9 @@ import '../../../../../core/api/api_client.dart';
 import '../../../../auth/data/models/auth_models.dart';
 
 class UserDashboardScreen extends StatefulWidget {
- const UserDashboardScreen({super.key,required this.apiClient,required this.session,required this.onSignOut,required this.onNavigate});
+ const UserDashboardScreen({super.key,required this.apiClient,required this.session,required this.onSignOut,required this.onNavigate, required this.onOpenMenu});
  final ApiClient apiClient; final AuthSession session; final Future<void> Function() onSignOut; final ValueChanged<int> onNavigate;
+  final VoidCallback onOpenMenu;
  @override State<UserDashboardScreen> createState()=>_UserDashboardScreenState();
 }
 class _UserDashboardScreenState extends State<UserDashboardScreen>{
@@ -87,7 +88,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  String _ago(dynamic raw){final d=DateTime.tryParse(raw?.toString()??'');if(d==null)return '';final m=DateTime.now().difference(d.toLocal()).inMinutes;if(m<1)return 'Just now';if(m<60)return '$m m ago';final h=(m/60).round();if(h<24)return '$h h ago';return '${(h/24).round()}d ago';}
  @override Widget build(BuildContext context){
  final p=_profile;final done=_done;final percent=done*10;final unread=_unreadCount;
- return Scaffold(backgroundColor:AppPalette.background,appBar:AppBar(backgroundColor:AppPalette.background,elevation:0,title:const Text('VEDICVIVAH',style:TextStyle(color:AppPalette.darkMaroon,letterSpacing:2,fontSize:15,fontWeight:FontWeight.w700)),actions:[
+ return Scaffold(backgroundColor:AppPalette.background,appBar:AppBar(backgroundColor:AppPalette.background,elevation:0,leading:IconButton(tooltip:'Open navigation menu',onPressed:widget.onOpenMenu,icon:const Icon(Icons.menu_rounded,color:AppPalette.maroon)),title:const Text('VEDICVIVAH',style:TextStyle(color:AppPalette.darkMaroon,letterSpacing:2,fontSize:15,fontWeight:FontWeight.w700)),actions:[
  IconButton(onPressed:_load,icon:const Icon(Icons.refresh_rounded,color:AppPalette.maroon)),
  IconButton(onPressed:widget.onSignOut,icon:const Icon(Icons.logout_rounded,color:AppPalette.maroon)),
  ]),
