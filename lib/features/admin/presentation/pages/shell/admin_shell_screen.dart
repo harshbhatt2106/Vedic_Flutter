@@ -4,6 +4,7 @@ import '../../../../../core/api/api_client.dart';
 import '../../../../auth/data/models/auth_models.dart';
 import '../dashboard/admin_dashboard_screen.dart';
 import '../pending_requests/pending_requests_screen.dart';
+import '../members/admin_members_screen.dart';
 
 class AdminShellScreen extends StatefulWidget {
   const AdminShellScreen({
@@ -125,6 +126,10 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
           ),
         'Profile Reviews' => PendingRequestsScreen(
             key: const ValueKey('admin-profile-reviews'),
+            apiClient: widget.apiClient,
+          ),
+        'Members' => AdminMembersScreen(
+            key: const ValueKey('admin-members'),
             apiClient: widget.apiClient,
           ),
         _ => _ModuleNotImplementedScreen(module: _selected),
