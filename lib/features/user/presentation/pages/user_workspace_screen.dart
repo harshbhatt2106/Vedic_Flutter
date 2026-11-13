@@ -3,6 +3,7 @@ import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
 import 'user_photos_screen.dart';
 import 'user_contacts_mentor_screen.dart';
+import 'user_profile_editor_screen.dart';
 
 class UserWorkspaceScreen extends StatefulWidget {
   const UserWorkspaceScreen({super.key, required this.apiClient});
@@ -21,7 +22,7 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTi
         tabs:const [Tab(text:'Find matches'),Tab(text:'Profile'),Tab(text:'Photos'),Tab(text:'Preferences'),Tab(text:'Messages'),Tab(text:'Support'),Tab(text:'Plans'),Tab(text:'References'),Tab(text:'Mentor')])),
     body:TabBarView(controller:tabs,children:[
       _WorkspaceTab(api:widget.apiClient,kind:'discover'),
-      _WorkspaceTab(api:widget.apiClient,kind:'profile'),
+      UserProfileEditorScreen(apiClient:widget.apiClient),
       UserPhotosScreen(apiClient:widget.apiClient),
       _WorkspaceTab(api:widget.apiClient,kind:'preferences'),
       _WorkspaceTab(api:widget.apiClient,kind:'messages'),
