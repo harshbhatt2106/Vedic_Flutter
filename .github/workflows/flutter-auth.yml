@@ -51,6 +51,16 @@ jobs:
             fi
           fi
 
+          if [ ! -s "$TARGET" ]; then
+            cat > "$TARGET" <<'EOF'
+package com.vedicvivah.app
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
+EOF
+          fi
+
           grep -q 'namespace = "com.vedicvivah.app"' android/app/build.gradle.kts
           grep -q 'applicationId = "com.vedicvivah.app"' android/app/build.gradle.kts
           grep -q 'package com.vedicvivah.app' android/app/src/main/kotlin/com/vedicvivah/app/MainActivity.kt
