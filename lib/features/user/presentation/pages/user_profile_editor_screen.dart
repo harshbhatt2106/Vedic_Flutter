@@ -51,10 +51,10 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
       Text('Profile visibility: ${profile['visibilityStatus']??'Unknown'}'),
       if(profile['rejectionReason']!=null)Text('Review note: ${profile['rejectionReason']}',style:const TextStyle(color:AppPalette.error)),
       Wrap(spacing:8,children:[
-        OutlinedButton(onPressed:busy?null:()=>run(()=>widget.apiClient.patch('/user-profile/visibility',body:{'status':'Visible'},authenticated:true)),child:const Text('Make visible')),
-        OutlinedButton(onPressed:busy?null:()=>run(()=>widget.apiClient.patch('/user-profile/visibility',body:{'status':'Hidden'},authenticated:true)),child:const Text('Hide profile')),
+        OutlinedButton(onPressed:busy?null:()=>run(() async { await widget.apiClient.patch('/user-profile/visibility',body:{'status':'Visible'},authenticated:true); }),child:const Text('Make visible')),
+        OutlinedButton(onPressed:busy?null:()=>run(() async { await widget.apiClient.patch('/user-profile/visibility',body:{'status':'Hidden'},authenticated:true); }),child:const Text('Hide profile')),
       ]),
-      SizedBox(width:double.infinity,child:FilledButton(onPressed:busy?null:()=>run(()=>widget.apiClient.post('/user-profile/submit-for-review',body:{},authenticated:true)),child:const Text('Submit profile for review'))),
+      SizedBox(width:double.infinity,child:FilledButton(onPressed:busy?null:()=>run(() async { await widget.apiClient.post('/user-profile/submit-for-review',body:{},authenticated:true); }),child:const Text('Submit profile for review'))),
     ]))),
   ]));}
   Widget field(String label,String key,{bool numeric=false,int lines=1})=>Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:fields[key],keyboardType:numeric?const TextInputType.numberWithOptions(decimal:true):TextInputType.text,maxLines:lines,decoration:InputDecoration(labelText:label,filled:true)));
