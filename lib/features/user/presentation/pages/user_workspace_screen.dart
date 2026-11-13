@@ -10,18 +10,20 @@ import 'user_profile_editor_screen.dart';
 import '../../data/chat_realtime_service.dart';
 
 class UserWorkspaceScreen extends StatefulWidget {
-  const UserWorkspaceScreen({super.key, required this.apiClient, this.initialTab = 0, this.subscriptionExpired = false, this.approvalRestricted = false});
+  const UserWorkspaceScreen({super.key, required this.apiClient, this.initialTab = 0, this.subscriptionExpired = false, this.approvalRestricted = false, this.onSubscriptionCheck});
   final ApiClient apiClient;
   final int initialTab;
   final bool subscriptionExpired,approvalRestricted;
+  final VoidCallback? onSubscriptionCheck;
   @override
   State<UserWorkspaceScreen> createState() => _UserWorkspaceScreenState();
 }
 class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTickerProviderStateMixin {
   late final TabController tabs;
-  @override void initState(){super.initState();tabs=TabController(length:9,initialIndex:widget.initialTab.clamp(0,8).toInt(),vsync:this);}
+  @override void initState(){super.initState();tabs=TabController(length:9,initialIndex:widget.initialTab.clamp(0,8).toInt(),vsync:this)..addListener(_handleTabChange);}
+  void _handleTabChange(){if(!tabs.indexIsChanging&&tabs.index==6)widget.onSubscriptionCheck?.call();}
   @override void didUpdateWidget(covariant UserWorkspaceScreen oldWidget){super.didUpdateWidget(oldWidget);if(oldWidget.initialTab!=widget.initialTab)tabs.animateTo(widget.initialTab.clamp(0,8).toInt());}
-  @override void dispose(){tabs.dispose();super.dispose();}
+  @override void dispose(){tabs.removeListener(_handleTabChange);tabs.dispose();super.dispose();}
   Widget _tab(String kind,Widget child){
     final blocked=(widget.subscriptionExpired&&const {'discover','preferences','messages','mentor'}.contains(kind))||
       (widget.approvalRestricted&&const {'discover','preferences','messages','plans','mentor'}.contains(kind));
