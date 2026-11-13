@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
@@ -71,17 +72,33 @@ class _UserToolsScreenState extends State<UserToolsScreen> {
   };
 
   Future<void> _viewShortlistedProfile(Map<String,dynamic> item) async {
-    final userId=_read(item,['shortlistedUserId']);
-    if(userId.isEmpty)return;
+    final userId=_read(item,['shortlistedUserId']);if(userId.isEmpty)return;
     try{
       final response=await widget.apiClient.get('/user-profile/$userId',authenticated:true);
       final p=response['data'] is Map?Map<String,dynamic>.from(response['data']):<String,dynamic>{};
+      Uint8List? avatar;try{avatar=await widget.apiClient.getBytes('/user-profile/$userId/primary-photo',authenticated:true);}catch(_){}
       if(!mounted)return;
-      await showModalBottomSheet(context:context,isScrollControlled:true,builder:(ctx)=>SafeArea(child:Padding(padding:const EdgeInsets.all(18),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
-        Text('${p['firstName']??'VedicVivah'} ${p['lastName']??'member'}',style:const TextStyle(fontSize:22,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),
-        const SizedBox(height:10),
-        ...{'Gender':p['gender'],'Religion':p['religionName'],'Caste':p['casteName'],'Education':p['education'],'Profession':p['profession'],'City':p['cityName'],'About':p['aboutMe']}.entries.where((e)=>e.value!=null&&e.value.toString().isNotEmpty).map((e)=>Padding(padding:const EdgeInsets.symmetric(vertical:4),child:Text('${e.key}: ${e.value}'))),
-      ]))));
+      final dob=DateTime.tryParse(p['dateOfBirth']?.toString()??'');String age='';
+      if(dob!=null){final now=DateTime.now();var years=now.year-dob.year;if(now.month<dob.month||(now.month==dob.month&&now.day<dob.day))years--;age='$years yrs';}
+      final sections=<String,Map<String,dynamic>>{
+        'Personal information':{'Date of birth':age,'Gender':p['gender'],'Time of birth':p['timeOfBirth'],'Birth place':p['birthPlace'],'Disability':p['disabilityStatus']==true?'Yes':'No','Disability details':p['disabilityDetails']},
+        'Religion & community':{'Religion':p['religionName'],'Caste':p['casteName'],'Sub-caste':p['subCasteName'],'Mother tongue':p['motherTongue']},
+        'Education & career':{'Education':p['education'],'Course':p['course'],'Qualification':p['qualification'],'Occupation':p['occupation'],'Profession':p['profession'],'Work type':p['workType'],'Yearly income':p['yearlyIncome']},
+        'Physical':{'Height':p['heightFeet']==null?'':'${p['heightFeet']} ft ${p['heightInches']??0} in','Weight':p['weight']},
+        'Family':{'Marital status':p['maritalStatus'],'Father':p['fatherName'],'Mother':p['motherName'],'Brother':p['brother'],'Sister':p['sister'],'Married brothers':p['marriedBrotherCount'],'Married sisters':p['marriedSisterCount'],'Nanaji':p['nanajiName'],'Mosal surname':p['mosalSurname']},
+        'Location & residence':{'Country':p['countryName'],'State':p['stateName'],'City':p['cityName'],'Pin code':p['pinCode'],'Native place':p['nativePlace'],'Area':p['area'],'Residence':p['residenceType'],'Area (sq.ft.)':p['areaInSqFt'],'Rooms':p['roomCount']},
+        'About':{'About me':p['aboutMe']},
+      };
+      await showModalBottomSheet(context:context,isScrollControlled:true,builder:(ctx)=>SafeArea(child:Padding(padding:const EdgeInsets.all(18),child:SizedBox(height:MediaQuery.of(ctx).size.height*.84,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Row(children:[CircleAvatar(radius:30,backgroundColor:AppPalette.champagne,backgroundImage:avatar==null?null:MemoryImage(avatar),child:avatar==null?const Icon(Icons.person,color:AppPalette.maroon):null),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text('${p['firstName']??'VedicVivah'} ${p['lastName']??'member'}',style:const TextStyle(fontSize:21,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),Text([age,p['gender']?.toString()].where((x)=>x!=null&&x.toString().isNotEmpty).join(' · '),style:const TextStyle(color:AppPalette.secondary))]))]),
+        const SizedBox(height:12),
+        Expanded(child:ListView(children:sections.entries.map((section)=>Padding(padding:const EdgeInsets.only(bottom:12),child:Card(color:AppPalette.surface,elevation:0,child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text(section.key,style:const TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
+          const SizedBox(height:6),
+          ...section.value.entries.where((e)=>e.value!=null&&e.value.toString().trim().isNotEmpty).map((e)=>Padding(padding:const EdgeInsets.symmetric(vertical:3),child:Text('${e.key}: ${e.value}'))),
+        ]))))).toList())),
+        SizedBox(width:double.infinity,child:FilledButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Close'))),
+      ])))));
     }catch(e){if(mounted)setState(()=>_error=e.toString());}
   }
 
