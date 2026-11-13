@@ -28,23 +28,23 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
     if(error!=null)Card(child:Padding(padding:const EdgeInsets.all(10),child:Text(error!,style:const TextStyle(color:AppPalette.error)))),
     if(notice!=null)Card(child:Padding(padding:const EdgeInsets.all(10),child:Text(notice!,style:const TextStyle(color:AppPalette.maroon)))),
     section('Personal information',[
-      field('First name','firstName'),field('Last name','lastName'),field('Date of birth (YYYY-MM-DD)','dateOfBirth'),field('Gender','gender'),field('Time of birth (HH:mm)','timeOfBirth'),field('Birth place','birthPlace'),
-      field('Birth country ID','birthCountryId',numeric:true),field('Birth state ID','birthStateId',numeric:true),field('Birth city ID','birthCityId',numeric:true),
-      field('Disability status (true/false)','disabilityStatus'),field('Disability details','disabilityDetails'),
+      field('First name','firstName'),field('Last name','lastName'),field('Date of birth','dateOfBirth'),field('Gender','gender'),field('Time of birth','timeOfBirth'),field('Birth place','birthPlace'),
+      field('Birth country','birthCountryId',numeric:true),field('Birth state','birthStateId',numeric:true),field('Birth city','birthCityId',numeric:true),
+      field('Disability status','disabilityStatus'),if(val('disabilityStatus').toLowerCase()=='true')field('Disability details','disabilityDetails'),
       field('Height feet','heightFeet',numeric:true),field('Height inches','heightInches',numeric:true),field('Weight (kg)','weight',numeric:true),
     ],()=>savePersonal()),
     section('Religion & community',[
-      field('Religion ID','religionId',numeric:true),field('Caste ID','casteId',numeric:true),field('Sub-caste ID','subCasteId',numeric:true),field('Community','community'),field('Mother tongue','motherTongue'),field('Mother tongue ID','motherTongueId',numeric:true),
+      field('Religion','religionId'),field('Caste','casteId'),field('Sub-caste','subCasteId'),field('Community','community'),field('Mother tongue','motherTongue'),
     ],()=>saveCommunity()),
     section('Education & career',[
       field('Education','education'),field('Qualification','qualification'),field('Course','course'),field('Occupation','occupation'),field('Profession','profession'),field('Work type','workType'),
-      field('Qualification ID','qualificationId',numeric:true),field('Education field ID','educationFieldId',numeric:true),field('Course ID','courseId',numeric:true),field('Occupation ID','occupationId',numeric:true),field('Profession ID','professionId',numeric:true),field('Yearly income','yearlyIncome',numeric:true),
+      field('Education field','educationFieldId'),field('Qualification','qualificationId'),field('Course','courseId'),field('Occupation','occupationId'),field('Profession','professionId'),field('Yearly income','yearlyIncome',numeric:true),
     ],()=>saveCareer()),
     section('Family information',[
       field('Father name','fatherName'),field('Mother name','motherName'),field('Brothers','brother'),field('Sisters','sister'),field('Married brothers count','marriedBrotherCount',numeric:true),field('Married sisters count','marriedSisterCount',numeric:true),field('Nanaji name','nanajiName'),field('Mosal surname','mosalSurname'),field('Marital status','maritalStatus'),
     ],()=>saveFamily()),
     section('Location & residence',[
-      field('Country ID','countryId',numeric:true),field('State ID','stateId',numeric:true),field('City ID','cityId',numeric:true),field('PIN code','pinCode'),field('Native place','nativePlace'),field('Area / locality','area'),field('Residence type','residenceType'),field('Area (sq ft)','areaInSqFt',numeric:true),field('Room count','roomCount',numeric:true),
+      field('Country','countryId'),field('State','stateId'),field('City','cityId'),field('PIN code','pinCode'),field('Native place','nativePlace'),field('Area / locality','area'),field('Residence type','residenceType'),field('Area (sq ft)','areaInSqFt',numeric:true),field('Room count','roomCount',numeric:true),
     ],()=>saveLocation()),
     section('About me',[field('About me','aboutMe',lines:4)],()=>saveAbout()),
     Card(color:AppPalette.surface,child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
@@ -69,7 +69,8 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
     if(choices.containsKey(key)){final values=choices[key]!;final current=val(key);return Padding(padding:const EdgeInsets.only(bottom:8),child:DropdownButtonFormField<String>(initialValue:values.contains(current)?current:null,isExpanded:true,decoration:InputDecoration(labelText:label,filled:true),items:values.map((v)=>DropdownMenuItem(value:v,child:Text(key=='disabilityStatus'?(v=='true'?'Yes':'No'):v))).toList(),onChanged:(v)=>setState(()=>fields[key]!.text=v??'')));}
     const ids={'religionId','casteId','subCasteId','motherTongueId','qualificationId','educationFieldId','courseId','occupationId','professionId','countryId','stateId','cityId','birthCountryId','birthStateId','birthCityId'};
     if(ids.contains(key))return selectField(label,key);
-    return Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:fields[key],keyboardType:numeric?const TextInputType.numberWithOptions(decimal:true):TextInputType.text,maxLines:lines,decoration:InputDecoration(labelText:label,filled:true)));
+    const readOnlyNames={'motherTongue','education','qualification','course','occupation','profession'};
+    return Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:fields[key],readOnly:readOnlyNames.contains(key),keyboardType:numeric?const TextInputType.numberWithOptions(decimal:true):TextInputType.text,maxLines:lines,decoration:InputDecoration(labelText:label,filled:true)));
   }
   Widget selectField(String label,String key){
     final current=integer(key);final list=options[key]??const <Map<String,dynamic>>[];
@@ -99,7 +100,8 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
       'birthStateId':{'birthCityId':'/locations/cities?stateId=$value'},
     };
     final clearChildren=<String,List<String>>{'religionId':['casteId','subCasteId'],'casteId':['subCasteId'],'educationFieldId':['courseId'],'occupationId':['professionId'],'countryId':['stateId','cityId'],'stateId':['cityId'],'birthCountryId':['birthStateId','birthCityId'],'birthStateId':['birthCityId']};
-    for(final child in clearChildren[key]??const <String>[])fields[child]!.clear();
+    const pairedNames=<String,String>{'courseId':'course','professionId':'profession','birthCityId':'birthPlace'};
+    for(final child in clearChildren[key]??const <String>[]){fields[child]!.clear();final paired=pairedNames[child];if(paired!=null)fields[paired]!.clear();}
     for(final entry in dependencies[key]?.entries??const <MapEntry<String,String>>[]){await fetchOptions(entry.key,entry.value);}
     if(mounted)setState((){});
   }
