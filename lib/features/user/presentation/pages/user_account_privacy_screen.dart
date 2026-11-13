@@ -7,9 +7,10 @@ import '../../../../core/storage/session_store.dart';
 import '../../../auth/data/models/auth_models.dart';
 
 class UserAccountPrivacyScreen extends StatefulWidget {
-  const UserAccountPrivacyScreen({super.key,required this.apiClient,required this.onSignOut});
+  const UserAccountPrivacyScreen({super.key,required this.apiClient,required this.onSignOut, required this.onOpenMenu});
   final ApiClient apiClient;
   final Future<void> Function() onSignOut;
+  final VoidCallback onOpenMenu;
   @override State<UserAccountPrivacyScreen> createState()=>_UserAccountPrivacyScreenState();
 }
 class _UserAccountPrivacyScreenState extends State<UserAccountPrivacyScreen> with SingleTickerProviderStateMixin{
@@ -18,7 +19,7 @@ class _UserAccountPrivacyScreenState extends State<UserAccountPrivacyScreen> wit
   @override void dispose(){tabs.dispose();super.dispose();}
   @override Widget build(BuildContext context)=>Scaffold(
     backgroundColor:AppPalette.background,
-    appBar:AppBar(backgroundColor:AppPalette.background,title:const Text('Account & privacy',style:TextStyle(color:AppPalette.darkMaroon)),
+    appBar:AppBar(backgroundColor:AppPalette.background,leading:IconButton(tooltip:'Open navigation menu',onPressed:widget.onOpenMenu,icon:const Icon(Icons.menu_rounded,color:AppPalette.maroon)),title:const Text('Account & privacy',style:TextStyle(color:AppPalette.darkMaroon)),
       bottom:TabBar(controller:tabs,labelColor:AppPalette.maroon,unselectedLabelColor:AppPalette.secondary,indicatorColor:AppPalette.gold,tabs:const [Tab(text:'Account settings'),Tab(text:'Privacy policies')])),
     body:TabBarView(controller:tabs,children:[_AccountSettingsTab(api:widget.apiClient,onSignOut:widget.onSignOut),_PrivacyPoliciesTab(api:widget.apiClient)]),
   );
