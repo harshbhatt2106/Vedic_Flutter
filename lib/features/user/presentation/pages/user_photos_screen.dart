@@ -18,8 +18,9 @@ class _UserPhotosScreenState extends State<UserPhotosScreen>{
   Future<void> upload() async {
     if (photos.length >= 6) { setState(()=>error='You can upload up to 6 photos.'); return; }
     final file=await picker.pickImage(source:ImageSource.gallery,imageQuality:88);
-    if(file==null)return;
+    if(!mounted||file==null)return;
     final bytes=await file.readAsBytes();
+    if(!mounted)return;
     if(bytes.length>5*1024*1024){setState(()=>error='Photo size cannot exceed 5 MB.');return;}
     final ext=file.name.split('.').last.toLowerCase();
     if(!['jpg','jpeg','png','webp'].contains(ext)){setState(()=>error='Choose a JPG, PNG or WEBP image.');return;}
@@ -38,7 +39,23 @@ class _UserPhotosScreenState extends State<UserPhotosScreen>{
       await load();
     }
   }
-  Future<void> action(String id,bool primary)async{setState(()=>busy=true);try{if(primary){await widget.apiClient.put('/user-profile/photos/'+id+'/primary',body:{},authenticated:true);}else{await widget.apiClient.delete('/user-profile/photos/'+id,authenticated:true);cache.remove(id);}await load();}catch(e){setState(()=>error=e.toString());}finally{if(mounted)setState(()=>busy=false);}}
+  Future<void> action(String id,bool primary)async{
+    if(!mounted)return;
+    setState(()=>busy=true);
+    try{
+      if(primary){
+        await widget.apiClient.put('/user-profile/photos/'+id+'/primary',body:{},authenticated:true);
+      }else{
+        await widget.apiClient.delete('/user-profile/photos/'+id,authenticated:true);
+        cache.remove(id);
+      }
+      if(mounted)await load();
+    }catch(e){
+      if(mounted)setState(()=>error=e.toString());
+    }finally{
+      if(mounted)setState(()=>busy=false);
+    }
+  }
   @override Widget build(BuildContext context){if(loading)return const Center(child:CircularProgressIndicator(color:AppPalette.maroon));return RefreshIndicator(color:AppPalette.maroon,onRefresh:load,child:ListView(padding:const EdgeInsets.all(16),children:[
     const Text('Profile photo gallery',style:TextStyle(fontSize:22,color:AppPalette.darkMaroon)),
     const SizedBox(height:8),
