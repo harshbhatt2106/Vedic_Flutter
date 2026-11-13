@@ -548,3 +548,41 @@ The first implementation batch has now been committed to `flutter-development`:
 - The new screens use the existing API client and endpoints observed in the web services. They have not yet been compiled or exercised against a live authenticated backend.
 - UI/interaction parity still needs comparison against the exact web dialogs, validation, navigation, and error states.
 - Do not mark these features as runtime-verified until Flutter analyze/tests/build and device/API testing pass.
+
+
+## 17. User implementation batch — 2026-11-13
+
+The following implementation batch is committed to `flutter-development`. This does **not** certify 100% parity.
+
+### Added / connected screens
+
+- User Panel navigation now includes Home, Updates, Shortlist, Blocked, Reports, Interests, More, and Account.
+- More workspace contains:
+  - Find Matches list using `GET /user-profile/discover`, shortlist action and send-interest action.
+  - Profile personal-information and About Me saves using the existing PATCH routes; visibility toggle and submit-for-review.
+  - Partner preference read/save using `GET/PUT /partner-preferences`, retaining existing nested height/community/career/location values when available.
+  - REST conversation inbox and conversation message send/read flow.
+  - Support ticket create/list.
+  - Active subscription plan and current subscription read-only display; activation links are not fabricated because the web says payment gateway is not available and asks users to contact support.
+  - Profile photo gallery: protected image content, set-primary and delete actions.
+- Account & Privacy screen contains account name, username availability/update, email-change OTP request/verify, password update, and pending privacy-policy acceptance with scroll-to-end and explicit confirmation.
+- API client now supports authenticated JSON PATCH, needed for the existing profile and visibility endpoints.
+
+### Still not implemented / not fully equivalent
+
+- Profile: full community, education/career, physical, family, location/residence sections, reference management, master-data cascading selectors, photo upload, complete profile validation, and full photo privacy/visibility controls.
+- Discover: complete web filter set (religion/caste/sub-caste, education/career, income, height, location, marital status, gender, etc.), filter popup, detailed profile view, report/block from profile, and exact pagination behavior.
+- Preferences: complete nested preference editor and master-data selectors; current screen exposes only gender, marital status, age and additional requirements while retaining other values.
+- Messaging: REST polling/manual refresh only; SignalR real-time connection/reconnection, delete message/conversation, search, paging and live read receipts are not implemented.
+- Account: profile picture upload, username/session edge-case parity, email resend/cooldown, account deactivation/deletion and confirmation flows remain.
+- Privacy: screen is accessible from Account; automatic mandatory post-login policy gate and individual acceptance parity still need integration/verification.
+- Notifications: device-token registration/push delivery and deep-link navigation remain.
+- User references, mentor directory/selection (where surfaced as a User feature), and complete reports/profile report creation remain.
+- User dashboard still needs web parity actions and exact summary/stat navigation.
+
+### Verification status
+
+- Source commits were written directly to the existing `flutter-development` branch. No branch was created or switched.
+- Flutter CI workflow is configured to run `flutter pub get`, `flutter analyze`, and `flutter test` on pushes to this branch. This audit does not claim those checks passed until a corresponding successful workflow run is observed.
+- No live authenticated API test or physical-device test has been performed in this batch.
+- Do not report 100% parity. Continue the route-by-route control/DTO audit and close the outstanding items above before final sign-off.
