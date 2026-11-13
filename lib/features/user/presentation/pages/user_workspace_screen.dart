@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
 import 'user_photos_screen.dart';
 import 'user_contacts_mentor_screen.dart';
 import 'user_profile_editor_screen.dart';
+import '../../data/chat_realtime_service.dart';
 
 class UserWorkspaceScreen extends StatefulWidget {
   const UserWorkspaceScreen({super.key, required this.apiClient});
@@ -252,10 +254,12 @@ class _ConversationSheet extends StatefulWidget {
   @override State<_ConversationSheet> createState()=>_ConversationSheetState();
 }
 class _ConversationSheetState extends State<_ConversationSheet>{
-  bool loading=true,sending=false;List<Map<String,dynamic>> messages=[];final text=TextEditingController();String? error;
+  bool loading=true,sending=false;List<Map<String,dynamic>> messages=[];final text=TextEditingController();String? error;late final ChatRealtimeService realtime;
   String get id=>widget.conversation['id'].toString();
-  @override void initState(){super.initState();load();}
-  @override void dispose(){text.dispose();super.dispose();}
+  @override void initState(){super.initState();realtime=ChatRealtimeService(onMessage:_onRealtimeMessage,onMessageDeleted:_onRealtimeDelete);load();realtime.connect().then((_)=>realtime.joinConversation(id)).catchError((_){});}
+  @override void dispose(){unawaited(realtime.dispose());text.dispose();super.dispose();}
+  void _onRealtimeMessage(Map<String,dynamic> message){if(message['conversationId']?.toString()!=id||!mounted)return;setState(()=>{if(!messages.any((m)=>m['id']==message['id']))messages.add(message);});widget.api.put('/conversations/$id/read',body:{},authenticated:true);}
+  void _onRealtimeDelete(String messageId,String conversationId){if(conversationId!=id||!mounted)return;setState(()=>messages.removeWhere((m)=>m['id']?.toString()==messageId));}
   Future<void> load()async{try{final r=await widget.api.get('/conversations/'+id+'/messages?take=50',authenticated:true);final d=r['data'];messages=d is List?d.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];await widget.api.put('/conversations/'+id+'/read',body:{},authenticated:true);}catch(e){error=e.toString();}finally{if(mounted)setState(()=>loading=false);}}
   Future<void> send()async{if(text.text.trim().isEmpty)return;setState(()=>sending=true);try{await widget.api.post('/conversations/'+id+'/messages',body:{'content':text.text.trim()},authenticated:true);text.clear();await load();}catch(e){setState(()=>error=e.toString());}finally{if(mounted)setState(()=>sending=false);}}
   Future<void> deleteMessage(String messageId)async{try{await widget.api.delete('/conversations/$id/messages/$messageId',authenticated:true);await load();}catch(e){if(mounted)setState(()=>error=e.toString());}}
