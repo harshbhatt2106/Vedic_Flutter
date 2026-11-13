@@ -46,12 +46,12 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTi
       bottom:TabBar(controller:tabs,isScrollable:true,labelColor:AppPalette.maroon,unselectedLabelColor:AppPalette.secondary,indicatorColor:AppPalette.gold,
         tabs:const [Tab(text:'Find matches'),Tab(text:'Profile'),Tab(text:'Photos'),Tab(text:'Preferences'),Tab(text:'Messages'),Tab(text:'Support'),Tab(text:'Plans'),Tab(text:'References'),Tab(text:'Mentor')])),
     body:TabBarView(controller:tabs,children:[
-      _tab('discover',_WorkspaceTab(api:widget.apiClient,kind:'discover')),
+      _tab('discover',_WorkspaceTab(api:widget.apiClient,kind:'discover',onOpenMenu:widget.onOpenMenu)),
       UserProfileEditorScreen(apiClient:widget.apiClient),
       UserPhotosScreen(apiClient:widget.apiClient),
-      _tab('preferences',_WorkspaceTab(api:widget.apiClient,kind:'preferences')),
-      _tab('messages',_WorkspaceTab(api:widget.apiClient,kind:'messages')),
-      _WorkspaceTab(api:widget.apiClient,kind:'support'),
+      _tab('preferences',_WorkspaceTab(api:widget.apiClient,kind:'preferences',onOpenMenu:widget.onOpenMenu)),
+      _tab('messages',_WorkspaceTab(api:widget.apiClient,kind:'messages',onOpenMenu:widget.onOpenMenu)),
+      _WorkspaceTab(api:widget.apiClient,kind:'support',onOpenMenu:widget.onOpenMenu),
       _tab('plans',_WorkspaceTab(api:widget.apiClient,kind:'plans')),
       UserReferencesScreen(apiClient:widget.apiClient),
       _tab('mentor',UserMentorScreen(apiClient:widget.apiClient)),
@@ -60,8 +60,8 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTi
 }
 
 class _WorkspaceTab extends StatefulWidget {
-  const _WorkspaceTab({required this.api,required this.kind});
-  final ApiClient api; final String kind;
+  const _WorkspaceTab({required this.api,required this.kind,required this.onOpenMenu});
+  final ApiClient api; final String kind; final VoidCallback onOpenMenu;
   @override State<_WorkspaceTab> createState()=>_WorkspaceTabState();
 }
 class _WorkspaceTabState extends State<_WorkspaceTab> {
@@ -337,7 +337,11 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
       final dob=DateTime.tryParse(p['dateOfBirth']?.toString()??'');
       String age='';if(dob!=null){final now=DateTime.now();var years=now.year-dob.year;if(now.month<dob.month||(now.month==dob.month&&now.day<dob.day))years--;age='$years years';}
       await showModalBottomSheet(context:context,isScrollControlled:true,builder:(ctx)=>SafeArea(child:Padding(padding:const EdgeInsets.all(18),child:SizedBox(height:MediaQuery.of(ctx).size.height*.82,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-        Text('${p['firstName']??'VedicVivah'} ${p['lastName']??'member'}',style:const TextStyle(fontSize:22,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),
+        Row(children:[
+          IconButton(tooltip:'Open navigation menu',onPressed:(){Navigator.pop(ctx);WidgetsBinding.instance.addPostFrameCallback((_)=>widget.onOpenMenu());},icon:const Icon(Icons.menu_rounded,color:AppPalette.maroon)),
+          Expanded(child:Text('${p['firstName']??'VedicVivah'} ${p['lastName']??'member'}',style:const TextStyle(fontSize:22,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon))),
+          IconButton(tooltip:'Close profile details',onPressed:()=>Navigator.pop(ctx),icon:const Icon(Icons.close)),
+        ]),
         const SizedBox(height:10),
         Expanded(child:ListView(children:[
           if(photoBytes.isNotEmpty)SizedBox(height:190,child:ListView.separated(scrollDirection:Axis.horizontal,itemCount:photoBytes.length,separatorBuilder:(_,__)=>const SizedBox(width:8),itemBuilder:(context,index)=>ClipRRect(borderRadius:BorderRadius.circular(12),child:Image.memory(photoBytes[index],width:150,height:180,fit:BoxFit.cover)))),
@@ -495,7 +499,7 @@ Align(alignment:Alignment.centerLeft,child:Text('Match gender: ${choice.isEmpty?
     await run(()async{await widget.api.delete('/conversations/$id',authenticated:true);await load();});
   }
   Future<void> openConversation(Map<String,dynamic> c)async{
-    await showModalBottomSheet(context:context,isScrollControlled:true,builder:(ctx)=>_ConversationSheet(api:widget.api,conversation:c));
+    await showModalBottomSheet(context:context,isScrollControlled:true,builder:(ctx)=>_ConversationSheet(api:widget.api,conversation:c,onOpenMenu:widget.onOpenMenu));
     if(mounted)await load();
   }
   List<Widget> support()=>[
@@ -527,8 +531,8 @@ Align(alignment:Alignment.centerLeft,child:Text('Match gender: ${choice.isEmpty?
 }
 
 class _ConversationSheet extends StatefulWidget {
-  const _ConversationSheet({required this.api,required this.conversation});
-  final ApiClient api;final Map<String,dynamic> conversation;
+  const _ConversationSheet({required this.api,required this.conversation,required this.onOpenMenu});
+  final ApiClient api;final Map<String,dynamic> conversation;final VoidCallback onOpenMenu;
   @override State<_ConversationSheet> createState()=>_ConversationSheetState();
 }
 class _ConversationSheetState extends State<_ConversationSheet>{
@@ -588,7 +592,14 @@ class _ConversationSheetState extends State<_ConversationSheet>{
   Future<void> deleteMessage(String messageId)async{try{await widget.api.delete('/conversations/$id/messages/$messageId',authenticated:true);await load();}catch(e){if(mounted)setState(()=>error=e.toString());}}
   bool isOwnMessage(Map<String,dynamic> message)=>message['senderUserId']?.toString()==SessionStore.instance.current?.userId;
   @override Widget build(BuildContext context)=>SafeArea(child:SizedBox(height:MediaQuery.of(context).size.height*.8,child:Column(children:[
-    ListTile(title:Text(widget.conversation['otherUserName']?.toString()??'Conversation'),trailing:IconButton(onPressed:()=>Navigator.pop(context),icon:const Icon(Icons.close))),
+    Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(children:[
+        IconButton(tooltip:'Open navigation menu',onPressed:(){Navigator.pop(context);WidgetsBinding.instance.addPostFrameCallback((_)=>widget.onOpenMenu());},icon:const Icon(Icons.menu_rounded,color:AppPalette.maroon)),
+        Expanded(child:Text(widget.conversation['otherUserName']?.toString()??'Conversation',style:const TextStyle(fontWeight:FontWeight.w600))),
+        IconButton(tooltip:'Close conversation',onPressed:()=>Navigator.pop(context),icon:const Icon(Icons.close)),
+      ]),
+    ),
     if(error!=null)Text(error!,style:const TextStyle(color:AppPalette.error)),
     if(messages.length>=50)TextButton(onPressed:loading?null:loadOlder,child:const Text('Load older messages')),
     Expanded(child:loading?const Center(child:CircularProgressIndicator()):ListView(reverse:true,padding:const EdgeInsets.all(12),children:messages.reversed.map((m)=>GestureDetector(onLongPress:isOwnMessage(m)?()=>deleteMessage(m['id'].toString()):null,child:Card(color:AppPalette.surface,child:Padding(padding:const EdgeInsets.all(10),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m['senderUserName']?.toString()??'',style:const TextStyle(fontSize:11,color:AppPalette.gold)),Text(m['content']?.toString()??''),if(isOwnMessage(m))const Text('Long press to delete your message',style:TextStyle(fontSize:9,color:AppPalette.secondary))]))))).toList())),
