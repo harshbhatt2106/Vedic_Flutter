@@ -59,6 +59,14 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
     ]))),
   ]));}
   Widget field(String label,String key,{bool numeric=false,int lines=1}) {
+    if(key=='dateOfBirth')return Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:fields[key],readOnly:true,decoration:const InputDecoration(labelText:'Date of birth',filled:true,suffixIcon:Icon(Icons.calendar_month)),onTap:()async{
+      final now=DateTime.now();final maxDate=DateTime(now.year-18,now.month,now.day);final existing=DateTime.tryParse(val(key));final initial=existing!=null&&existing.isBefore(maxDate)?existing:maxDate;
+      final picked=await showDatePicker(context:context,initialDate:initial,firstDate:DateTime(1900),lastDate:maxDate);
+      if(picked!=null)setState(()=>fields[key]!.text='${picked.year.toString().padLeft(4,'0')}-${picked.month.toString().padLeft(2,'0')}-${picked.day.toString().padLeft(2,'0')}');
+    }));
+    if(key=='timeOfBirth')return Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:fields[key],readOnly:true,decoration:const InputDecoration(labelText:'Time of birth',filled:true,suffixIcon:Icon(Icons.access_time)),onTap:()async{final picked=await showTimePicker(context:context,initialTime:TimeOfDay.now());if(picked!=null)setState(()=>fields[key]!.text='${picked.hour.toString().padLeft(2,'0')}:${picked.minute.toString().padLeft(2,'0')}');}));
+    const choices=<String,List<String>>{'gender':['Male','Female','Other'],'disabilityStatus':['false','true'],'maritalStatus':['Single','Married','Divorced','Widowed'],'residenceType':['Owned','Rented','Family','Other']};
+    if(choices.containsKey(key)){final values=choices[key]!;final current=val(key);return Padding(padding:const EdgeInsets.only(bottom:8),child:DropdownButtonFormField<String>(initialValue:values.contains(current)?current:null,isExpanded:true,decoration:InputDecoration(labelText:label,filled:true),items:values.map((v)=>DropdownMenuItem(value:v,child:Text(key=='disabilityStatus'?(v=='true'?'Yes':'No'):v))).toList(),onChanged:(v)=>setState(()=>fields[key]!.text=v??'')));}
     const ids={'religionId','casteId','subCasteId','motherTongueId','qualificationId','educationFieldId','courseId','occupationId','professionId','countryId','stateId','cityId','birthCountryId','birthStateId','birthCityId'};
     if(ids.contains(key))return selectField(label,key);
     return Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:fields[key],keyboardType:numeric?const TextInputType.numberWithOptions(decimal:true):TextInputType.text,maxLines:lines,decoration:InputDecoration(labelText:label,filled:true)));
@@ -116,7 +124,11 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
   }
   Future<void> run(Future<void> Function() fn)async{setState(() { busy=true; error=null; notice=null; });try{await fn();if(mounted)setState(()=>notice='Changes saved successfully.');await load();}catch(e){if(mounted)setState(()=>error=e.toString());}finally{if(mounted)setState(()=>busy=false);}}
   Future<void> savePersonal()async{
-    if(str('firstName')==null||str('dateOfBirth')==null||str('gender')==null)throw Exception('First name, date of birth and gender are required.');
+    final dob=DateTime.tryParse(val('dateOfBirth'));final now=DateTime.now();
+    final minDate=DateTime(now.year-18,now.month,now.day);
+    if(str('firstName')==null||dob==null||str('gender')==null)throw Exception('First name, a valid date of birth and gender are required.');
+    if(dob.isAfter(minDate))throw Exception('You must be at least 18 years old.');
+    if(!const ['Male','Female','Other'].contains(val('gender')))throw Exception('Select a valid gender.');
     await widget.apiClient.patch('/user-profile/personal',body:{
       'personal':{'firstName':val('firstName'),'lastName':str('lastName'),'dateOfBirth':val('dateOfBirth'),'gender':val('gender'),'timeOfBirth':str('timeOfBirth'),'birthPlace':str('birthPlace'),'birthCountryId':integer('birthCountryId'),'birthStateId':integer('birthStateId'),'birthCityId':integer('birthCityId'),'disabilityStatus':val('disabilityStatus').toLowerCase()=='true','disabilityDetails':str('disabilityDetails')},
       'physical':{'heightFeet':integer('heightFeet'),'heightInches':integer('heightInches'),'weight':number('weight')},'rowVersion':profile['rowVersion']
