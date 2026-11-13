@@ -73,6 +73,49 @@ class ApiClient {
     }
   }
 
+
+  Future<Map<String, dynamic>> putMultipartFile(
+    String path, {
+    required Uint8List bytes,
+    required String filename,
+    String fieldName = 'photo',
+    bool authenticated = false,
+    bool retryAfterRefresh = true,
+  }) async {
+    try {
+      final request = http.MultipartRequest('PUT', AppConfig.endpoint(path))
+        ..headers['Accept'] = 'application/json'
+        ..files.add(http.MultipartFile.fromBytes(fieldName, bytes, filename: filename));
+      final token = _sessionStore.current?.accessToken;
+      if (authenticated && token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      final streamed = await _client.send(request).timeout(_timeout);
+      final response = await http.Response.fromStream(streamed).timeout(_timeout);
+      if (response.statusCode == 401 && authenticated && retryAfterRefresh && !path.startsWith('/auth/')) {
+        if (await _refreshSession()) {
+          return putMultipartFile(path, bytes: bytes, filename: filename, fieldName: fieldName, authenticated: true, retryAfterRefresh: false);
+        }
+        await _sessionStore.clear();
+        throw const ApiException(message: 'Your session has expired. Please sign in again.', statusCode: 401);
+      }
+      final dynamic decoded = response.body.isEmpty ? <String, dynamic>{} : jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw ApiException(message: 'The server returned an unexpected response.', statusCode: response.statusCode);
+      }
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final message = decoded['message']?.toString().trim();
+        throw ApiException(message: message?.isNotEmpty == true ? message! : _fallbackMessage(response.statusCode),
+          statusCode: response.statusCode, validationErrors: _readValidationErrors(decoded['errors']));
+      }
+      return decoded;
+    } on ApiException { rethrow; }
+    on ApiConfigurationException catch (e) { throw ApiException(message: e.message); }
+    on TimeoutException { throw const ApiException(message: 'The request timed out. Check your connection and try again.'); }
+    on FormatException { throw const ApiException(message: 'The server returned an unreadable response.'); }
+    catch (_) { throw const ApiException(message: 'Unable to upload the photo. Check your connection and try again.'); }
+  }
+
   Future<Uint8List> getBytes(String path, {bool authenticated = false, bool retryAfterRefresh = true}) async {
     final headers = <String, String>{'Accept': '*/*'};
     final token = _sessionStore.current?.accessToken;
