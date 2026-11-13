@@ -18,6 +18,8 @@ class ApiClient {
       _request('GET', path, authenticated: authenticated);
   Future<Map<String, dynamic>> post(String path, {required Map<String, dynamic> body, bool authenticated = false}) =>
       _request('POST', path, body: body, authenticated: authenticated);
+  Future<Map<String, dynamic>> patch(String path, {required Map<String, dynamic> body, bool authenticated = false}) =>
+      _request('PATCH', path, body: body, authenticated: authenticated);
   Future<Map<String, dynamic>> put(String path, {required Map<String, dynamic> body, bool authenticated = false}) =>
       _request('PUT', path, body: body, authenticated: authenticated);
   Future<Map<String, dynamic>> delete(String path, {bool authenticated = false}) =>
