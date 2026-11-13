@@ -40,10 +40,13 @@ jobs:
           sed -i 's/android:label="[^"]*"/android:label="VedicVivah"/' android/app/src/main/AndroidManifest.xml
 
           ACTIVITY="$(find android/app/src/main/kotlin -name MainActivity.kt -print -quit)"
+          TARGET="android/app/src/main/kotlin/com/vedicvivah/app/MainActivity.kt"
           if [ -n "$ACTIVITY" ]; then
             mkdir -p android/app/src/main/kotlin/com/vedicvivah/app
-            sed 's/^package .*/package com.vedicvivah.app/' "$ACTIVITY" > android/app/src/main/kotlin/com/vedicvivah/app/MainActivity.kt
-            if [ "$ACTIVITY" != "android/app/src/main/kotlin/com/vedicvivah/app/MainActivity.kt" ]; then
+            if [ "$ACTIVITY" = "$TARGET" ]; then
+              sed -i 's/^package .*/package com.vedicvivah.app/' "$ACTIVITY"
+            else
+              sed 's/^package .*/package com.vedicvivah.app/' "$ACTIVITY" > "$TARGET"
               rm "$ACTIVITY"
             fi
           fi
