@@ -52,7 +52,7 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTi
       _tab('preferences',_WorkspaceTab(api:widget.apiClient,kind:'preferences',onOpenMenu:widget.onOpenMenu)),
       _tab('messages',_WorkspaceTab(api:widget.apiClient,kind:'messages',onOpenMenu:widget.onOpenMenu)),
       _WorkspaceTab(api:widget.apiClient,kind:'support',onOpenMenu:widget.onOpenMenu),
-      _tab('plans',_WorkspaceTab(api:widget.apiClient,kind:'plans')),
+      _tab('plans',_WorkspaceTab(api:widget.apiClient,kind:'plans',onOpenMenu:widget.onOpenMenu)),
       UserReferencesScreen(apiClient:widget.apiClient),
       _tab('mentor',UserMentorScreen(apiClient:widget.apiClient)),
     ]),
