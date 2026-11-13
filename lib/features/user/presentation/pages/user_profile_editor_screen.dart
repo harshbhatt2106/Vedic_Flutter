@@ -87,7 +87,8 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
       'birthCountryId':{'birthStateId':'/locations/states?countryId=$value'},
       'birthStateId':{'birthCityId':'/locations/cities?stateId=$value'},
     };
-    for(final child in dependencies[key]?.keys??const <String>[])fields[child]!.clear();
+    final clearChildren=<String,List<String>>{'religionId':['casteId','subCasteId'],'casteId':['subCasteId'],'educationFieldId':['courseId'],'occupationId':['professionId'],'countryId':['stateId','cityId'],'stateId':['cityId'],'birthCountryId':['birthStateId','birthCityId'],'birthStateId':['birthCityId']};
+    for(final child in clearChildren[key]??const <String>[])fields[child]!.clear();
     for(final entry in dependencies[key]?.entries??const <MapEntry<String,String>>[]){await fetchOptions(entry.key,entry.value);}
     if(mounted)setState((){});
   }
