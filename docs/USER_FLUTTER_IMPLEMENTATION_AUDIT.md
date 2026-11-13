@@ -132,3 +132,88 @@ No Flutter CLI, Android emulator/device, live backend test account, or runtime t
 - Live API end-to-end tests: NOT RUN
 
 These checks must be run in the user's local Flutter/Android environment or an execution environment with Flutter SDK and valid test access. Never report them as passed without actual output.
+
+
+## 11. Code-level audit findings — first pass
+
+### 11.1 User dashboard (/dashboard)
+
+**Web source inspected:** src/features/auth/pages/DashboardPage.tsx  
+**Flutter source inspected:** lib/features/user/presentation/pages/dashboard/user_dashboard_screen.dart  
+**Backend source inspected:** UserController.cs and UserProfileController.cs.
+
+#### Web data dependencies observed
+- Own profile: GET /user-profile.
+- Own photos: GET /user-profile/photos; primary image content: GET /user-profile/photos/{photoId}/content.
+- Relative references: GET /user-references.
+- Partner preference: GET /partner-preferences.
+- Match preview: GET /user-profile/discover using saved preferences.
+- Shortlist preview: GET /shortlists.
+- Recent notifications: notification service list call.
+- Public success stories: public success-story service; exact request still to be recorded from its service implementation.
+
+#### Web dashboard actions observed
+- Add profile photo → /profile with edit state and photos section.
+- Find Matches CTA and match statistic → /preferences.
+- View/Edit Profile and Create Biodata → /profile (with edit state for section-specific actions).
+- Profile completion section actions → /profile with the selected section in navigation state.
+- Shortlist statistic/preview actions → /shortlisted.
+- Unread updates statistic, See all and notification preview actions → /notifications.
+- Shortlist preview Open action → /shortlisted.
+- Profile status includes incomplete, pending/under review, approved/live and rejected/changes requested states; rejection reason is surfaced when present.
+- Loading/error states exist independently for profile bundle, matches, shortlist and notifications.
+
+#### Flutter dashboard behavior observed
+- Loads profile, photos, shortlist, latest notifications and relative references concurrently.
+- Calculates a ten-section biodata completion score locally.
+- Shows profile name/status, shortlist count, unread updates, photo count, latest updates and shortlist preview.
+- App bar exposes Refresh and Sign out.
+- Current screen does not expose the web dashboard's Find Matches, profile edit, add photo, shortlist navigation or notifications navigation actions. Statistic tiles and preview rows are currently display-only.
+- Current screen does not load saved partner preferences, discover preview matches or success stories.
+- Flutter screen uses GET /notifications?take=4; web dashboard delegates to notificationService.getNotifications(4). Exact query-name parity must be checked in the web service and backend controller.
+- Flutter screen does not call GET /user/dashboard. Backend UserController.Dashboard() currently returns only success=true and an authorization message, not dashboard statistics. Web dashboard data is assembled from feature APIs instead.
+
+**Dashboard parity status:** PARTIAL. Data display exists; major web navigation/actions and data sections are missing or unverified. Do not mark complete.
+
+### 11.2 My Profile (/profile) — initial structural audit
+
+**Web sources inspected:** ProfilePage.tsx, CompleteProfilePage.tsx, profileService.ts, referenceDataService.ts.
+
+The profile editor is a merged profile/detail experience with ten sections:
+1. Personal
+2. Religion & Community
+3. Education & Career
+4. Physical
+5. Family
+6. Relative Contacts
+7. Location
+8. Residence
+9. About Me
+10. Photos
+
+The profile request model includes identity and birth details, disability, religion/caste/sub-caste, mother tongue, education/career reference IDs and display fields, income/work type, height/weight, family, native/residential location, residence type/area/room count, marital status, about text and row-version concurrency data.
+
+#### Profile API operations observed in the web service
+- GET /user-profile — read own profile.
+- PUT /user-profile — save complete profile.
+- PATCH /user-profile/personal, /community, /education-career, /family, /location-residence, /about — section-specific saves.
+- PATCH /user-profile/visibility with { status: 'Visible' | 'Hidden' }.
+- POST /user-profile/submit-for-review.
+- GET /user-profile/photos; POST multipart /user-profile/photos; DELETE /user-profile/photos/{photoId}; PUT /user-profile/photos/{photoId}/primary.
+- GET protected own photo bytes via /user-profile/photos/{photoId}/content.
+- GET /user-references; POST/PUT/DELETE /user-references for relative contact management.
+- Reference lookups include religion, caste by religion, sub-caste by caste, qualifications, mother tongues, education fields, courses, occupations and professions.
+- Location lookup dependencies include countries, states by country and cities by state. Location values are backend-managed.
+
+#### Backend behavior confirmed in inspected source
+- UserProfileController is authenticated.
+- Discover validation enforces pageNumber >= 1, pageSize 1–50, ages >= 18, minimum age <= maximum age, minimum income <= maximum income.
+- Photo upload is limited to 5 MiB and passes through image validation before the upload command.
+- UserController mentor-selection endpoints require the User role.
+- PartnerPreferencesController validates age >= 18, min/max age order, income order and maximum height feet <= 8; concurrency/unique-row conflicts return HTTP 409 with reload guidance.
+
+#### Data/master-data warning
+The inspected web referenceDataService.ts still contains local fallback arrays for religion/caste/sub-caste when local-data mode is enabled. Production behavior should use backend reference data. Flutter must not copy those local arrays as production master data. Location lookups are explicitly backend-sourced because Admin manages them dynamically.
+
+**Profile parity status:** WEB structure and service/API surface partially traced; every individual field, conditional control, validation, modal, photo action and backend handler still requires line-by-line audit. Flutter profile UI is not evidenced by the current User page tree. Do not mark complete.
+
