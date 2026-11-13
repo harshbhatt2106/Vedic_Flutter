@@ -1,0 +1,191 @@
+import 'package:flutter/material.dart';
+import '../../../../app/theme/app_theme.dart';
+import '../../../../core/api/api_client.dart';
+
+class UserWorkspaceScreen extends StatefulWidget {
+  const UserWorkspaceScreen({super.key, required this.apiClient});
+  final ApiClient apiClient;
+  @override
+  State<UserWorkspaceScreen> createState() => _UserWorkspaceScreenState();
+}
+class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTickerProviderStateMixin {
+  late final TabController tabs;
+  @override void initState(){super.initState();tabs=TabController(length:6,vsync:this);}
+  @override void dispose(){tabs.dispose();super.dispose();}
+  @override Widget build(BuildContext context)=>Scaffold(
+    backgroundColor:AppPalette.background,
+    appBar:AppBar(backgroundColor:AppPalette.background,title:const Text('Your account',style:TextStyle(color:AppPalette.darkMaroon)),
+      bottom:TabBar(controller:tabs,isScrollable:true,labelColor:AppPalette.maroon,unselectedLabelColor:AppPalette.secondary,indicatorColor:AppPalette.gold,
+        tabs:const [Tab(text:'Find matches'),Tab(text:'Profile'),Tab(text:'Preferences'),Tab(text:'Messages'),Tab(text:'Support'),Tab(text:'Plans')])),
+    body:TabBarView(controller:tabs,children:[
+      _WorkspaceTab(api:widget.apiClient,kind:'discover'),
+      _WorkspaceTab(api:widget.apiClient,kind:'profile'),
+      _WorkspaceTab(api:widget.apiClient,kind:'preferences'),
+      _WorkspaceTab(api:widget.apiClient,kind:'messages'),
+      _WorkspaceTab(api:widget.apiClient,kind:'support'),
+      _WorkspaceTab(api:widget.apiClient,kind:'plans'),
+    ]),
+  );
+}
+
+class _WorkspaceTab extends StatefulWidget {
+  const _WorkspaceTab({required this.api,required this.kind});
+  final ApiClient api; final String kind;
+  @override State<_WorkspaceTab> createState()=>_WorkspaceTabState();
+}
+class _WorkspaceTabState extends State<_WorkspaceTab> {
+  bool loading=true,working=false; String? error,notice;
+  List<Map<String,dynamic>> items=[]; Map<String,dynamic> data={};
+  final a=TextEditingController(),b=TextEditingController(),c=TextEditingController(),d=TextEditingController(),e=TextEditingController();
+  String choice='Female',marital='Never Married';
+  @override void initState(){super.initState();load();}
+  @override void dispose(){for(final x in [a,b,c,d,e]){x.dispose();}super.dispose();}
+  String get title=>switch(widget.kind){'discover'=>'Find matches','profile'=>'Your biodata','preferences'=>'Partner preferences','messages'=>'Messages','support'=>'Help & support',_=>'Membership plans'};
+  Future<void> load() async {
+    setState(()=>{loading=true,error=null});
+    try {
+      if(widget.kind=='discover'){
+        final r=await widget.api.get('/user-profile/discover?pageNumber=1&pageSize=20',authenticated:true);
+        final raw=r['data']; final list=raw is Map?raw['items']:raw;
+        items=list is List?list.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];
+      } else if(widget.kind=='profile'){
+        final r=await widget.api.get('/user-profile',authenticated:true); final raw=r['data'];
+        if(raw is Map){data=Map<String,dynamic>.from(raw);a.text=data['firstName']?.toString()??'';b.text=data['lastName']?.toString()??'';c.text=data['dateOfBirth']?.toString().split('T').first??'';d.text=data['gender']?.toString()??'';e.text=data['aboutMe']?.toString()??'';}
+      } else if(widget.kind=='preferences'){
+        final r=await widget.api.get('/partner-preferences',authenticated:true); final raw=r['data'];
+        if(raw is Map){data=Map<String,dynamic>.from(raw);choice=data['preferredGender']?.toString()??choice;marital=data['maritalStatus']?.toString()??marital;final age=data['age'];if(age is Map){a.text=age['minAge']?.toString()??'';b.text=age['maxAge']?.toString()??'';}c.text=data['additionalRequirements']?.toString()??'';}
+      } else if(widget.kind=='messages'){
+        final r=await widget.api.get('/conversations',authenticated:true);final raw=r['data'];
+        items=raw is List?raw.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];
+      } else if(widget.kind=='support'){
+        final r=await widget.api.get('/support/tickets',authenticated:true);final raw=r['data'];
+        items=raw is List?raw.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];
+      } else {
+        final r=await Future.wait([widget.api.get('/subscription-plans',authenticated:true),widget.api.get('/subscription-plans/my-subscription',authenticated:true)]);
+        final raw=r[0]['data'];items=raw is List?raw.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];
+        final sub=r[1]['data'];data=sub is Map?Map<String,dynamic>.from(sub):{};
+      }
+    } catch(ex){error=ex.toString().replaceFirst('ApiException: ','');}
+    finally{if(mounted)setState(()=>loading=false);}
+  }
+  Future<void> run(Future<void> Function() action) async {
+    setState(()=>{working=true,error=null,notice=null});
+    try{await action();}
+    catch(ex){if(mounted)setState(()=>error=ex.toString().replaceFirst('ApiException: ',''));}
+    finally{if(mounted)setState(()=>working=false);}
+  }
+  Widget field(String label,TextEditingController controller,{int lines=1,TextInputType? keyboard})=>Padding(
+    padding:const EdgeInsets.only(bottom:11),
+    child:TextField(controller:controller,maxLines:lines,keyboardType:keyboard,decoration:InputDecoration(labelText:label,filled:true)));
+  Widget panel(Widget child)=>Card(color:AppPalette.surface,elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(14),side:const BorderSide(color:AppPalette.border)),child:Padding(padding:const EdgeInsets.all(14),child:child));
+  Widget button(String label,VoidCallback fn)=>SizedBox(width:double.infinity,child:FilledButton(onPressed:working?null:fn,child:working?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):Text(label)));
+  Widget get alerts=>Column(children:[if(error!=null)panel(Text(error!,style:const TextStyle(color:AppPalette.error))),if(notice!=null)panel(Text(notice!,style:const TextStyle(color:AppPalette.maroon)))]);
+  @override Widget build(BuildContext context){
+    if(loading)return const Center(child:CircularProgressIndicator(color:AppPalette.maroon));
+    return RefreshIndicator(color:AppPalette.maroon,onRefresh:load,child:ListView(padding:const EdgeInsets.all(15),children:[
+      Text(title,style:const TextStyle(fontSize:22,color:AppPalette.darkMaroon)),const SizedBox(height:9),alerts,
+      if(widget.kind=='discover')...discover(),
+      if(widget.kind=='profile')...profile(),
+      if(widget.kind=='preferences')...preferences(),
+      if(widget.kind=='messages')...messages(),
+      if(widget.kind=='support')...support(),
+      if(widget.kind=='plans')...plans(),
+    ]));
+  }
+  List<Widget> discover()=>[
+    if(items.isEmpty)panel(const Text('No profiles found. Complete your profile and try again.')),
+    ...items.map((p){final id=(p['userId']??p['id']??'').toString();final name=(''+(p['firstName']??'').toString()+' '+(p['lastName']??'').toString()).trim();
+      final details=[p['profession'],p['education'],p['cityName'],p['religionName'],p['casteName']].where((x)=>x!=null&&x.toString().isNotEmpty).join(' · ');
+      return Padding(padding:const EdgeInsets.only(bottom:9),child:panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text(name.isEmpty?'VedicVivah member':name,style:const TextStyle(fontWeight:FontWeight.w700,color:AppPalette.darkMaroon,fontSize:16)),
+        if(details.isNotEmpty)Text(details,style:const TextStyle(color:AppPalette.secondary,fontSize:12)),
+        if((p['aboutMe']??'').toString().isNotEmpty)Text(p['aboutMe'].toString(),maxLines:2,overflow:TextOverflow.ellipsis),
+        Row(children:[Expanded(child:TextButton(onPressed:working||id.isEmpty?null:()=>run(()async{await widget.api.post('/shortlists/'+id,body:{},authenticated:true);setState(()=>notice='Profile added to shortlist.');}),child:const Text('Shortlist'))),Expanded(child:FilledButton(onPressed:working||id.isEmpty?null:()=>run(()async{await widget.api.post('/interests/'+id,body:{},authenticated:true);setState(()=>notice='Interest sent.');}),child:const Text('Send interest')))]),
+      ])));
+    }),
+  ];
+  List<Widget> profile()=>[
+    panel(Column(children:[
+      field('First name',a),field('Last name',b),field('Date of birth (YYYY-MM-DD)',c),field('Gender',d),field('About me',e,lines:4),
+      button('Save personal information',()=>run(()async{
+        final r=await widget.api.patch('/user-profile/personal',body:{'personal':{'firstName':a.text.trim(),'lastName':b.text.trim().isEmpty?null:b.text.trim(),'dateOfBirth':c.text.trim(),'gender':d.text.trim(),'timeOfBirth':data['timeOfBirth'],'birthPlace':data['birthPlace'],'birthCountryId':data['birthCountryId'],'birthStateId':data['birthStateId'],'birthCityId':data['birthCityId'],'disabilityStatus':data['disabilityStatus']??false,'disabilityDetails':data['disabilityDetails']},'physical':null,'rowVersion':data['rowVersion']},authenticated:true);
+        if(r['success']==false)throw Exception(r['message']??'Unable to save.');
+        setState(()=>notice='Personal information saved.');await load();
+      })),
+      const SizedBox(height:8),
+      button('Save About Me',()=>run(()async{await widget.api.patch('/user-profile/about',body:{'aboutMe':e.text.trim(),'rowVersion':data['rowVersion']},authenticated:true);setState(()=>notice='About Me saved.');await load();})),
+      const SizedBox(height:8),
+      Text('Profile status: '+(data['approvalStatus']??'Unknown').toString()),
+      Text('Visibility: '+(data['visibilityStatus']??'Unknown').toString()),
+      Wrap(spacing:8,children:[
+        OutlinedButton(onPressed:working?null:()=>run(()async{await widget.api.patch('/user-profile/visibility',body:{'status':'Visible'},authenticated:true);setState(()=>notice='Profile visible.');await load();}),child:const Text('Visible')),
+        OutlinedButton(onPressed:working?null:()=>run(()async{await widget.api.patch('/user-profile/visibility',body:{'status':'Hidden'},authenticated:true);setState(()=>notice='Profile hidden.');await load();}),child:const Text('Hidden')),
+      ]),
+      button('Submit for review',()=>run(()async{await widget.api.post('/user-profile/submit-for-review',body:{},authenticated:true);setState(()=>notice='Profile submitted for review.');await load();})),
+    ])),
+  ];
+  List<Widget> preferences()=>[
+    panel(Column(children:[
+      DropdownButtonFormField<String>(value:choice,decoration:const InputDecoration(labelText:'Preferred gender'),items:['Female','Male','Any'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(x)=>setState(()=>choice=x??choice)),
+      const SizedBox(height:10),
+      DropdownButtonFormField<String>(value:marital,decoration:const InputDecoration(labelText:'Marital status'),items:['Never Married','Divorced','Widowed','Any'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(x)=>setState(()=>marital=x??marital)),
+      const SizedBox(height:10),field('Minimum age',a,keyboard:TextInputType.number),field('Maximum age',b,keyboard:TextInputType.number),field('Additional requirements',c,lines:3),
+      button('Save preferences',()=>run(()async{
+        final lo=int.tryParse(a.text),hi=int.tryParse(b.text);
+        if(lo!=null&&hi!=null&&lo>hi)throw Exception('Minimum age cannot exceed maximum age.');
+        if((lo!=null&&lo<18)||(hi!=null&&hi<18))throw Exception('Minimum partner age is 18.');
+        await widget.api.put('/partner-preferences',body:{'preferredGender':choice,'maritalStatus':marital,'additionalRequirements':c.text.trim().isEmpty?null:c.text.trim(),'rowVersion':data['rowVersion'],'age':{'minAge':lo,'maxAge':hi},'height':data['height'],'community':data['community'],'career':data['career'],'location':data['location']},authenticated:true);
+        setState(()=>notice='Partner preferences saved.');await load();
+      })),
+    ])),
+    panel(const Text('Existing advanced community, career, height and location preference values are retained when saving this form.',style:TextStyle(color:AppPalette.secondary,fontSize:12))),
+  ];
+  List<Widget> messages()=>[
+    if(items.isEmpty)panel(const Text('No conversations yet.')),
+    ...items.map((c)=>panel(ListTile(onTap:()=>openConversation(c),leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(c['otherUserName']?.toString()??'Member'),subtitle:Text(c['lastMessage']?.toString()??''),trailing:Text((c['unreadCount']??0).toString())))),
+  ];
+  Future<void> openConversation(Map<String,dynamic> c)async{
+    final id=c['id'].toString();
+    await showModalBottomSheet(context:context,isScrollControlled:true,builder:(ctx)=>_ConversationSheet(api:widget.api,conversation:c));
+  }
+  List<Widget> support()=>[
+    panel(Column(children:[
+      field('Describe your question or issue',a,lines:4),
+      button('Send query',()=>run(()async{if(a.text.trim().isEmpty)throw Exception('Please enter your query.');await widget.api.post('/support/tickets',body:{'message':a.text.trim()},authenticated:true);a.clear();setState(()=>notice='Your query has been sent.');await load();})),
+    ])),
+    const Text('My queries',style:TextStyle(fontSize:17,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),
+    if(items.isEmpty)panel(const Text('No queries yet.')),
+    ...items.map((t)=>panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(t['status']?.toString()??'Open',style:const TextStyle(color:AppPalette.gold,fontWeight:FontWeight.w700)),Text(t['message']?.toString()??''),if(t['adminReply']!=null)Text('Admin reply: '+t['adminReply'].toString())]))),
+  ];
+  List<Widget> plans()=>[
+    panel(Text(data.isEmpty?'No current subscription.':'Current plan: '+(data['planName']??'Free').toString()+' · '+(data['isExpired']==true?'Expired':'Active'))),
+    if(items.isEmpty)panel(const Text('No active plans are currently available.')),
+    ...items.map((p)=>panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      Text(p['name']?.toString()??'Plan',style:const TextStyle(fontSize:18,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),
+      Text('₹'+(p['price']??'').toString()+' / '+(p['durationMonths']??'').toString()+' months',style:const TextStyle(color:AppPalette.gold,fontWeight:FontWeight.w700)),
+      Text(p['shortDescription']?.toString()??''),
+      if(p['features'] is List)...(p['features'] as List).map((f)=>Text('• '+f.toString())),
+      const Text('Payment gateway is not available yet. Contact Support to activate this plan.',style:TextStyle(fontSize:12,color:AppPalette.secondary)),
+    ]))),
+  ];
+}
+
+class _ConversationSheet extends StatefulWidget {
+  const _ConversationSheet({required this.api,required this.conversation});
+  final ApiClient api;final Map<String,dynamic> conversation;
+  @override State<_ConversationSheet> createState()=>_ConversationSheetState();
+}
+class _ConversationSheetState extends State<_ConversationSheet>{
+  bool loading=true,sending=false;List<Map<String,dynamic>> messages=[];final text=TextEditingController();String? error;
+  String get id=>widget.conversation['id'].toString();
+  @override void initState(){super.initState();load();}
+  @override void dispose(){text.dispose();super.dispose();}
+  Future<void> load()async{try{final r=await widget.api.get('/conversations/'+id+'/messages?take=50',authenticated:true);final d=r['data'];messages=d is List?d.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];await widget.api.put('/conversations/'+id+'/read',body:{},authenticated:true);}catch(e){error=e.toString();}finally{if(mounted)setState(()=>loading=false);}}
+  Future<void> send()async{if(text.text.trim().isEmpty)return;setState(()=>sending=true);try{await widget.api.post('/conversations/'+id+'/messages',body:{'content':text.text.trim()},authenticated:true);text.clear();await load();}catch(e){setState(()=>error=e.toString());}finally{if(mounted)setState(()=>sending=false);}}
+  @override Widget build(BuildContext context)=>SafeArea(child:SizedBox(height:MediaQuery.of(context).size.height*.8,child:Column(children:[
+    ListTile(title:Text(widget.conversation['otherUserName']?.toString()??'Conversation'),trailing:IconButton(onPressed:()=>Navigator.pop(context),icon:const Icon(Icons.close))),
+    if(error!=null)Text(error!,style:const TextStyle(color:AppPalette.error)),
+    Expanded(child:loading?const Center(child:CircularProgressIndicator()):ListView(reverse:true,padding:const EdgeInsets.all(12),children:messages.reversed.map((m)=>Card(color:AppPalette.surface,child:Padding(padding:const EdgeInsets.all(10),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m['senderUserName']?.toString()??'',style:const TextStyle(fontSize:11,color:AppPalette.gold)),Text(m['content']?.toString()??'')])))).toList())),
+    Padding(padding:const EdgeInsets.all(10),child:Row(children:[Expanded(child:TextField(controller:text,decoration:const InputDecoration(hintText:'Write a message'))),IconButton(onPressed:sending?null:send,icon:const Icon(Icons.send,color:AppPalette.maroon))])),
+  ])));
+}
