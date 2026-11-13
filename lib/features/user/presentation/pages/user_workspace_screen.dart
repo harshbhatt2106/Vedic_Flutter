@@ -117,7 +117,8 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         if(raw is Map){data=Map<String,dynamic>.from(raw);marital=data['maritalStatus']?.toString()??'';
           final age=data['age'];if(age is Map){final min=(age['minAge'] as num?)?.toInt(),max=(age['maxAge'] as num?)?.toInt();a.text=min==21&&max==35?'':min?.toString()??'';b.text=min==21&&max==35?'':max?.toString()??'';}
           c.text=data['additionalRequirements']?.toString()??'';
-          for(final group in ['height','community','career','location']){final value=data[group];if(value is Map){for(final entry in value.entries){if(prefFields.containsKey(entry.key))prefFields[entry.key]!.text=entry.value?.toString()??'';}}}final height=data['height'];if(height is Map){prefFields['minHeightFeet']!.text=height['minFeet']?.toString()??'';prefFields['minHeightInches']!.text=height['minInches']?.toString()??'';prefFields['maxHeightFeet']!.text=height['maxFeet']?.toString()??'';prefFields['maxHeightInches']!.text=height['maxInches']?.toString()??'';}await _loadPreferenceOptions();}
+          for(final group in ['height','community','career','location']){final value=data[group];if(value is Map){for(final entry in value.entries){if(prefFields.containsKey(entry.key))prefFields[entry.key]!.text=entry.value?.toString()??'';}}}final height=data['height'];if(height is Map){prefFields['minHeightFeet']!.text=height['minFeet']?.toString()??'';prefFields['minHeightInches']!.text=height['minInches']?.toString()??'';prefFields['maxHeightFeet']!.text=height['maxFeet']?.toString()??'';prefFields['maxHeightInches']!.text=height['maxInches']?.toString()??'';}}
+        await _loadPreferenceOptions();
       } else if(widget.kind=='messages'){
         final r=await widget.api.get('/conversations',authenticated:true);final raw=r['data'];
         items=raw is List?raw.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];
