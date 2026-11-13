@@ -197,9 +197,9 @@ class _AdminMentorRequestsScreenState extends State<AdminMentorRequestsScreen> {
                     : _mentors.isEmpty
                         ? const _StateCard(title: 'No mentors found', message: 'No mentor statistics were returned by the server.')
                         : Column(children: [
-                            Row(children: [
-                              const Expanded(child: Text('Mentor', style: TextStyle(fontFamily: 'sans-serif', fontSize: 10, fontWeight: FontWeight.w700, color: AppPalette.secondary))),
-                              const Text('Members', style: TextStyle(fontFamily: 'sans-serif', fontSize: 10, fontWeight: FontWeight.w700, color: AppPalette.secondary)),
+                            const Row(children: [
+                              Expanded(child: Text('Mentor', style: TextStyle(fontFamily: 'sans-serif', fontSize: 10, fontWeight: FontWeight.w700, color: AppPalette.secondary))),
+                              Text('Members', style: TextStyle(fontFamily: 'sans-serif', fontSize: 10, fontWeight: FontWeight.w700, color: AppPalette.secondary)),
                             ]),
                             const Divider(color: AppPalette.border),
                             ..._mentors.map((mentor) => Padding(
