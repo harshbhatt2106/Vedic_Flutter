@@ -3,8 +3,9 @@ import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
 
 class UserInterestsScreen extends StatefulWidget {
-  const UserInterestsScreen({super.key, required this.apiClient});
+  const UserInterestsScreen({super.key, required this.apiClient, required this.onOpenChat});
   final ApiClient apiClient;
+  final VoidCallback onOpenChat;
 
   @override
   State<UserInterestsScreen> createState() => _UserInterestsScreenState();
@@ -62,6 +63,8 @@ class _UserInterestsScreenState extends State<UserInterestsScreen> with SingleTi
     }
     return '';
   }
+
+  Future<void> _openChat(Map<String,dynamic> item) async { final userId=_read(item,['userId']);if(userId.isEmpty)return;setState(()=>_working=true);try{await widget.apiClient.post('/conversations/$userId',body:{},authenticated:true);widget.onOpenChat();}catch(e){if(mounted)setState(()=>_error=e.toString().replaceFirst('ApiException: ',''));}finally{if(mounted)setState(()=>_working=false);} }
 
   Future<void> _act(Map<String, dynamic> item, String action) async {
     final id = _read(item, ['id']);
@@ -151,8 +154,9 @@ class _UserInterestsScreenState extends State<UserInterestsScreen> with SingleTi
       actions.add(FilledButton(onPressed: _working ? null : () => _act(item, 'resubmit'), child: const Text('Resend')));
     } else if (!received && status == 'Pending') {
       actions.add(TextButton(onPressed: _working ? null : () => _act(item, 'withdraw'), child: const Text('Withdraw')));
-    } else if (received && status == 'Accepted') {
+    } else if (status == 'Accepted') {
       actions.add(const Text('Accepted', style: TextStyle(color: AppPalette.gold, fontWeight: FontWeight.w600)));
+      actions.add(TextButton(onPressed:_working?null:()=>_openChat(item),child:const Text('Message')));
     }
     return Card(
       color: AppPalette.surface,
