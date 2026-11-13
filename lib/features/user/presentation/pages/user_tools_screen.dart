@@ -70,6 +70,21 @@ class _UserToolsScreenState extends State<UserToolsScreen> {
     UserToolKind.reports => _read(item, ['id']),
   };
 
+  Future<void> _viewShortlistedProfile(Map<String,dynamic> item) async {
+    final userId=_read(item,['shortlistedUserId']);
+    if(userId.isEmpty)return;
+    try{
+      final response=await widget.apiClient.get('/user-profile/$userId',authenticated:true);
+      final p=response['data'] is Map?Map<String,dynamic>.from(response['data']):<String,dynamic>{};
+      if(!mounted)return;
+      await showModalBottomSheet(context:context,isScrollControlled:true,builder:(ctx)=>SafeArea(child:Padding(padding:const EdgeInsets.all(18),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+        Text('${p['firstName']??'VedicVivah'} ${p['lastName']??'member'}',style:const TextStyle(fontSize:22,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),
+        const SizedBox(height:10),
+        ...{'Gender':p['gender'],'Religion':p['religionName'],'Caste':p['casteName'],'Education':p['education'],'Profession':p['profession'],'City':p['cityName'],'About':p['aboutMe']}.entries.where((e)=>e.value!=null&&e.value.toString().isNotEmpty).map((e)=>Padding(padding:const EdgeInsets.symmetric(vertical:4),child:Text('${e.key}: ${e.value}'))),
+      ]))));
+    }catch(e){if(mounted)setState(()=>_error=e.toString());}
+  }
+
   Future<void> _action(Map<String, dynamic> item) async {
     final id = _itemId(item);
     if (id.isEmpty) return;
@@ -191,6 +206,7 @@ class _UserToolsScreenState extends State<UserToolsScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: const BorderSide(color: AppPalette.border)),
       child: ListTile(
+        onTap: widget.kind == UserToolKind.shortlist ? () => _viewShortlistedProfile(item) : null,
         leading: CircleAvatar(backgroundColor: AppPalette.champagne, child: Icon(icon, color: AppPalette.maroon)),
         title: Text(title.isEmpty ? 'VedicVivah member' : title, style: const TextStyle(color: AppPalette.darkMaroon, fontWeight: FontWeight.w600)),
         subtitle: Text([detail, date].where((e) => e.isNotEmpty).join('\n')),
