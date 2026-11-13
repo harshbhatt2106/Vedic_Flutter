@@ -32,7 +32,7 @@ class _UserPanelShellState extends State<UserPanelShell> {
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      UserDashboardScreen(apiClient: widget.apiClient, session: widget.session, onSignOut: widget.onSignOut),
+      UserDashboardScreen(apiClient: widget.apiClient, session: widget.session, onSignOut: widget.onSignOut, onNavigate: (index)=>setState(()=>_index=index)),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.notifications),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.shortlist),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.blocked),
