@@ -35,8 +35,30 @@ class _AccountSettingsTabState extends State<_AccountSettingsTab>{
   Future<void> run(Future<void> Function() fn)async{setState(() { busy=true; error=null; notice=null; });try{await fn();}catch(e){if(mounted)setState(()=>error=e.toString().replaceFirst('ApiException: ',''));}finally{if(mounted)setState(()=>busy=false);}}
   Future<void> uploadAccountPhoto() async { final file=await picker.pickImage(source:ImageSource.gallery,imageQuality:88);if(file==null)return;final bytes=await file.readAsBytes();if(bytes.length>5*1024*1024){setState(()=>error='Photo size cannot exceed 5 MB.');return;}final ext=file.name.split('.').last.toLowerCase();if(!['jpg','jpeg','png','webp'].contains(ext)){setState(()=>error='Choose JPG, PNG or WEBP.');return;}await run(()async{await widget.api.putMultipartFile('/account/profile-picture',bytes:bytes,filename:file.name,authenticated:true);setState(()=>notice='Profile picture updated.');});}
   Future<void> resendEmailOtp() async { if(verificationId.isEmpty)return;await run(()async{await widget.api.post('/account/email-change/resend',body:{'verificationId':verificationId,'newEmail':newEmail.text.trim()},authenticated:true);setState(()=>notice='A new verification code has been sent.');}); }
-  Future<void> deactivateAccountAction() async { final yes=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Deactivate account?'),content:const Text('Your account will be deactivated. You can no longer use it until it is reactivated by the support team.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Deactivate'))]));if(yes==true){await run(()async{await widget.api.post('/account/deactivate',body:{},authenticated:true);await widget.onSignOut();});}}
-  Future<void> deleteAccount() async { bool married=false;final yes=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(title:const Text('Permanently delete account?'),content:Column(mainAxisSize:MainAxisSize.min,children:[const Text('This permanently deletes your VedicVivah account and associated profile data.'),CheckboxListTile(value:married,onChanged:(v)=>setDialog(()=>married=v??false),title:const Text('I am currently married'))]),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete permanently'))])));if(yes==true){await run(()async{await widget.api.delete('/account?isMarried=$married',authenticated:true);await widget.onSignOut();});}}
+  Future<void> deleteAccount() async {
+    int step=1;bool? married;
+    final confirmed=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog){
+      Widget actions(List<Widget> children)=>Row(mainAxisAlignment:MainAxisAlignment.end,children:children);
+      return AlertDialog(
+        title:Text(step==1?'Delete your account?':step==2?'One quick question…':'Final confirmation'),
+        content:step==1
+          ?const Text('This will permanently delete your profile, photos, messages and all activity. This action cannot be undone.')
+          :step==2
+            ?Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
+              const Text('Did you find your match on VedicVivah?'),
+              RadioListTile<bool>(contentPadding:EdgeInsets.zero,value:true,groupValue:married,onChanged:(v)=>setDialog(()=>married=v),title:const Text('Yes, I found my partner here')),
+              RadioListTile<bool>(contentPadding:EdgeInsets.zero,value:false,groupValue:married,onChanged:(v)=>setDialog(()=>married=v),title:const Text('No')),
+            ])
+            :Text(married==true?'Congratulations on finding your partner. Your account will be marked as married and removed.':'Your account and all associated data will be permanently removed.'),
+        actions:[if(step==1)TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),
+          if(step>1)TextButton(onPressed:()=>setDialog(()=>step--),child:const Text('Back')),
+          if(step<3)FilledButton(onPressed:()=>{if(step==1){setDialog(()=>step=2);}else if(married!=null){setDialog(()=>step=3);}},child:Text(step==1?'Continue':'Next')),
+          if(step==3)FilledButton(style:FilledButton.styleFrom(backgroundColor:AppPalette.error),onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete my account forever')),
+        ],
+      );
+    }));
+    if(confirmed==true&&married!=null){await run(()async{await widget.api.delete('/account?isMarried=$married',authenticated:true);await widget.onSignOut();});}
+  }
   Widget field(String label,TextEditingController c,{bool secret=false})=>Padding(padding:const EdgeInsets.only(bottom:10),child:TextField(controller:c,obscureText:secret,decoration:InputDecoration(labelText:label,filled:true)));
   Widget panel(Widget c)=>Card(color:AppPalette.surface,elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(14),side:const BorderSide(color:AppPalette.border)),child:Padding(padding:const EdgeInsets.all(14),child:c));
   Widget action(String label,VoidCallback fn)=>SizedBox(width:double.infinity,child:FilledButton(onPressed:busy?null:fn,child:Text(label)));
@@ -76,7 +98,6 @@ class _AccountSettingsTabState extends State<_AccountSettingsTab>{
     ])),
     panel(Column(children:[
       const Text('Account security',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
-      action('Deactivate account',deactivateAccountAction),
       const SizedBox(height:8),
       SizedBox(width:double.infinity,child:OutlinedButton(onPressed:busy?null:deleteAccount,style:OutlinedButton.styleFrom(foregroundColor:AppPalette.error),child:const Text('Delete account permanently'))),
     ])),
