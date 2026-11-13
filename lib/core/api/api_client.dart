@@ -20,6 +20,8 @@ class ApiClient {
       _request('POST', path, body: body, authenticated: authenticated);
   Future<Map<String, dynamic>> put(String path, {required Map<String, dynamic> body, bool authenticated = false}) =>
       _request('PUT', path, body: body, authenticated: authenticated);
+  Future<Map<String, dynamic>> delete(String path, {bool authenticated = false}) =>
+      _request('DELETE', path, authenticated: authenticated);
 
   Future<Uint8List> getBytes(String path, {bool authenticated = false, bool retryAfterRefresh = true}) async {
     final headers = <String, String>{'Accept': '*/*'};
