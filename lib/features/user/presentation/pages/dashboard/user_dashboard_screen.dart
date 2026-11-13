@@ -38,7 +38,10 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  // Reuse the user's saved preference groups rather than showing a permanent zero.
  try {
    final rawPreference=r[7]['data'];
-   final preference=rawPreference is Map?Map<String,dynamic>.from(rawPreference):<String,dynamic>{};
+   if(rawPreference is! Map){
+     _matchCount=0;
+   } else {
+   final preference=Map<String,dynamic>.from(rawPreference);
    final params=<String,String>{'pageNumber':'1','pageSize':'1'};
    void addValue(String key,dynamic value){if(value!=null&&value.toString().trim().isNotEmpty)params[key]=value.toString();}
    addValue('preferredGender',preference['preferredGender']);
@@ -56,6 +59,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
    final matches=await widget.apiClient.get('/user-profile/discover?${Uri(queryParameters:params).query}',authenticated:true);
    final page=matches['data'];
    if(page is Map)_matchCount=(page['totalCount'] as num?)?.toInt()??0;
+   }
  } catch (_) {
    _matchCount=0;
  }
