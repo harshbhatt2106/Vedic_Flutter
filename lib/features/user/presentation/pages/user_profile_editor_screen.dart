@@ -28,7 +28,7 @@ class _UserProfileEditorScreenState extends State<UserProfileEditorScreen>{
     if(error!=null)Card(child:Padding(padding:const EdgeInsets.all(10),child:Text(error!,style:const TextStyle(color:AppPalette.error)))),
     if(notice!=null)Card(child:Padding(padding:const EdgeInsets.all(10),child:Text(notice!,style:const TextStyle(color:AppPalette.maroon)))),
     section('Personal information',[
-      field('First name','firstName'),field('Last name','lastName'),field('Date of birth','dateOfBirth'),field('Gender','gender'),field('Time of birth','timeOfBirth'),field('Birth place','birthPlace'),
+      field('First name','firstName'),field('Last name','lastName'),field('Date of birth','dateOfBirth'),field('Gender','gender'),field('Time of birth','timeOfBirth'),
       field('Birth country','birthCountryId',numeric:true),field('Birth state','birthStateId',numeric:true),field('Birth city','birthCityId',numeric:true),
       field('Disability status','disabilityStatus'),if(val('disabilityStatus').toLowerCase()=='true')field('Disability details','disabilityDetails'),
       field('Height feet','heightFeet',numeric:true),field('Height inches','heightInches',numeric:true),field('Weight (kg)','weight',numeric:true),
