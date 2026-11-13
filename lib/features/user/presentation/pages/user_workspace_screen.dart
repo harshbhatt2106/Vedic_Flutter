@@ -16,8 +16,8 @@ class UserWorkspaceScreen extends StatefulWidget {
 }
 class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTickerProviderStateMixin {
   late final TabController tabs;
-  @override void initState(){super.initState();tabs=TabController(length:9,initialIndex:widget.initialTab.clamp(0,8),vsync:this);}
-  @override void didUpdateWidget(covariant UserWorkspaceScreen oldWidget){super.didUpdateWidget(oldWidget);if(oldWidget.initialTab!=widget.initialTab)tabs.animateTo(widget.initialTab.clamp(0,8));}
+  @override void initState(){super.initState();tabs=TabController(length:9,initialIndex:widget.initialTab.clamp(0,8).toInt(),vsync:this);}
+  @override void didUpdateWidget(covariant UserWorkspaceScreen oldWidget){super.didUpdateWidget(oldWidget);if(oldWidget.initialTab!=widget.initialTab)tabs.animateTo(widget.initialTab.clamp(0,8).toInt());}
   @override void dispose(){tabs.dispose();super.dispose();}
   @override Widget build(BuildContext context)=>Scaffold(
     backgroundColor:AppPalette.background,
