@@ -521,3 +521,30 @@ The User Panel is **not at feature parity**. Continue the per-page web control a
 ### 15.5 Verification limitations
 
 This checkpoint is based on static GitHub source inspection. Flutter CLI analysis, tests, Android build, physical-device testing and authenticated live API tests have not been run. No runtime pass or 100% parity claim is made.
+
+
+## 16. Implementation progress — 2026-11-13
+
+The first implementation batch has now been committed to `flutter-development`:
+
+- Added a User Panel bottom-navigation shell and routed authenticated User accounts through it. Existing Admin routing remains unchanged.
+- Added API-backed Notifications list with individual mark-as-read and mark-all-as-read actions.
+- Added API-backed Shortlist list with remove action.
+- Added API-backed Blocked Profiles list with unblock action.
+- Added API-backed My Reports read-only list.
+- Added Received/Sent Interests tabs with the web-supported pending accept/reject, sent rejected resubmit, and sent pending withdraw actions.
+
+**Files added**
+- `lib/features/user/presentation/pages/user_panel_shell.dart`
+- `lib/features/user/presentation/pages/user_tools_screen.dart`
+- `lib/features/user/presentation/pages/user_interests_screen.dart`
+
+**Files updated**
+- `lib/features/auth/presentation/screens/auth_role_landing_screen.dart`
+
+**Important limitations**
+- This is a partial implementation batch, not complete User Panel parity.
+- Find Matches, Partner Preferences, full Profile/Biodata editing and photo gallery, Account Settings, Messages/SignalR, Support, Subscription Plans, Privacy Policy acceptance, and remaining dashboard navigation are still outstanding.
+- The new screens use the existing API client and endpoints observed in the web services. They have not yet been compiled or exercised against a live authenticated backend.
+- UI/interaction parity still needs comparison against the exact web dialogs, validation, navigation, and error states.
+- Do not mark these features as runtime-verified until Flutter analyze/tests/build and device/API testing pass.
