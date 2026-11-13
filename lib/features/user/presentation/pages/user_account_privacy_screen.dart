@@ -26,7 +26,7 @@ class _UserAccountPrivacyScreenState extends State<UserAccountPrivacyScreen> wit
 
 class _AccountSettingsTab extends StatefulWidget{const _AccountSettingsTab({required this.api,required this.onSignOut});final ApiClient api;final Future<void> Function() onSignOut;@override State<_AccountSettingsTab> createState()=>_AccountSettingsTabState();}
 class _AccountSettingsTabState extends State<_AccountSettingsTab>{
-  bool loading=true,busy=false;int resendCooldown=0;Timer? resendTimer;String? error,notice;String email='',verificationId='';
+  bool loading=true,busy=false,usernameAvailable=false;int resendCooldown=0;Timer? resendTimer;String? error,notice;String email='',verificationId='';
   final picker=ImagePicker();final confirmPassword=TextEditingController();
   final first=TextEditingController(),last=TextEditingController(),username=TextEditingController(),newEmail=TextEditingController(),current=TextEditingController(),newPassword=TextEditingController(),otp=TextEditingController();
   @override void initState(){super.initState();load();}
@@ -68,7 +68,7 @@ class _AccountSettingsTabState extends State<_AccountSettingsTab>{
     )));
     if(confirmed==true&&married!=null){await run(()async{await widget.api.delete('/account?isMarried=$married',authenticated:true);await widget.onSignOut();});}
   }
-  Widget field(String label,TextEditingController c,{bool secret=false})=>Padding(padding:const EdgeInsets.only(bottom:10),child:TextField(controller:c,obscureText:secret,decoration:InputDecoration(labelText:label,filled:true)));
+  Widget field(String label,TextEditingController c,{bool secret=false,ValueChanged<String>? onChanged})=>Padding(padding:const EdgeInsets.only(bottom:10),child:TextField(controller:c,obscureText:secret,onChanged:onChanged,decoration:InputDecoration(labelText:label,filled:true)));
   Widget panel(Widget c)=>Card(color:AppPalette.surface,elevation:0,shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(14),side:const BorderSide(color:AppPalette.border)),child:Padding(padding:const EdgeInsets.all(14),child:c));
   Widget action(String label,VoidCallback fn)=>SizedBox(width:double.infinity,child:FilledButton(onPressed:busy?null:fn,child:Text(label)));
   @override Widget build(BuildContext context){if(loading)return const Center(child:CircularProgressIndicator());return RefreshIndicator(onRefresh:load,child:ListView(padding:const EdgeInsets.all(15),children:[
@@ -80,13 +80,24 @@ class _AccountSettingsTabState extends State<_AccountSettingsTab>{
     ])),
     panel(Column(children:[
       const Text('Username',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
-      field('Username',username),
-      action('Check availability',()=>run(()async{final r=await widget.api.get('/account/username-availability?username='+Uri.encodeQueryComponent(username.text.trim()),authenticated:true);final d=r['data'];setState(()=>notice=d is Map&&d['available']==true?'Username is available.':'Username is not available.');})),
-      action('Update username',()=>run(()async{final value=username.text.trim();if(!RegExp(r'^[a-zA-Z0-9._]{3,30}$').hasMatch(value))throw Exception('Use 3–30 letters, numbers, dots or underscores.');final r=await widget.api.put('/account/username',body:{'username':value},authenticated:true);
+      field('Username',username,onChanged:(_)=>setState(()=>usernameAvailable=false)),
+      action('Check availability',()=>run(()async{
+        final value=username.text.trim();
+        if(!RegExp(r'^[a-zA-Z0-9._]{3,30}$').hasMatch(value))throw Exception('Use 3–30 letters, numbers, dots or underscores.');
+        final r=await widget.api.get('/account/username-availability?username='+Uri.encodeQueryComponent(value),authenticated:true);
+        final d=r['data'];usernameAvailable=d is Map&&d['available']==true;
+        setState(()=>notice=usernameAvailable?'Username is available.':'Username is not available.');
+      })),
+      action('Update username',()=>run(()async{
+        final value=username.text.trim();
+        if(!RegExp(r'^[a-zA-Z0-9._]{3,30}$').hasMatch(value))throw Exception('Use 3–30 letters, numbers, dots or underscores.');
+        if(!usernameAvailable)throw Exception('Check that the username is available before saving.');
+        final r=await widget.api.put('/account/username',body:{'username':value},authenticated:true);
         final updated=(r['data'] is Map?(r['data'] as Map)['username']?.toString():null)??value;
         final session=SessionStore.instance.current;
         if(session!=null){await SessionStore.instance.update(AuthSession(userId:session.userId,userName:updated,role:session.role,accessToken:session.accessToken,expiresAtUtc:session.expiresAtUtc,refreshToken:session.refreshToken,refreshTokenExpiresAtUtc:session.refreshTokenExpiresAtUtc));}
-        setState(() { username.text=updated; notice='Username updated.'; });})),
+        setState((){username.text=updated;usernameAvailable=false;notice='Username updated.';});
+      })),
     ])),
     panel(Column(children:[
       const Text('Change email',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
