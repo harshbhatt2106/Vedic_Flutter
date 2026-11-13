@@ -27,7 +27,7 @@ class _UserToolsScreenState extends State<UserToolsScreen> {
   };
 
   String get _endpoint => switch (widget.kind) {
-    UserToolKind.notifications => '/notifications?take=50',
+    UserToolKind.notifications => '/notifications?take=100',
     UserToolKind.shortlist => '/shortlists',
     UserToolKind.blocked => '/blocks',
     UserToolKind.reports => '/reports/my',
