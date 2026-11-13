@@ -89,7 +89,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         final r=await widget.api.get('/user-profile/discover?'+query,authenticated:true);
         final raw=r['data']; final list=raw is Map?raw['items']:raw;
         final next=list is List?list.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():<Map<String,dynamic>>[];
-        items=discoverPage>1?[...items,...next]:next;
+        items=next;
         totalPages=(raw is Map?(raw['totalPages'] as num?)?.toInt():null)??1;
         if(!_discoveryOptionsLoaded){
           await _loadDiscoveryOptions();_discoveryOptionsLoaded=true;
