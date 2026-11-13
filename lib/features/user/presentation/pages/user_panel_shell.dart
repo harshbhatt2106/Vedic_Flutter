@@ -69,7 +69,7 @@ class _UserPanelShellState extends State<UserPanelShell> {
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.blocked),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.reports),
       UserInterestsScreen(apiClient: widget.apiClient, onOpenChat: ()=>_navigateFromDashboard(14)),
-      UserWorkspaceScreen(apiClient: widget.apiClient, initialTab: _workspaceInitialTab, subscriptionExpired: _subscriptionExpired, approvalRestricted: _approvalRestricted),
+      UserWorkspaceScreen(apiClient: widget.apiClient, initialTab: _workspaceInitialTab, subscriptionExpired: _subscriptionExpired, approvalRestricted: _approvalRestricted, onSubscriptionCheck: (){_loadAccountAccess();}),
       UserAccountPrivacyScreen(apiClient: widget.apiClient, onSignOut: widget.onSignOut),
     ];
     return Scaffold(
@@ -86,6 +86,7 @@ class _UserPanelShellState extends State<UserPanelShell> {
           final allowed = _subscriptionExpired ? const {0,6,7} : _approvalRestricted ? const {0,1,6} : const {0,1,2,3,4,5,6,7};
           if(!allowed.contains(value)){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('This section is unavailable until your profile or subscription status is resolved.')));return;}
           setState(() => _index = value);
+          if(value==6||value==7)_loadAccountAccess();
         },
         backgroundColor: AppPalette.surface,
         indicatorColor: AppPalette.champagne,
