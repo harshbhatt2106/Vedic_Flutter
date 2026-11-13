@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
@@ -18,6 +20,7 @@ class _UserInterestsScreenState extends State<UserInterestsScreen> with SingleTi
   String? _error;
   List<Map<String, dynamic>> _received = [];
   List<Map<String, dynamic>> _sent = [];
+  final Map<String,Uint8List> _avatars={};
 
   @override
   void initState() {
@@ -49,6 +52,10 @@ class _UserInterestsScreenState extends State<UserInterestsScreen> with SingleTi
         _received = parse(results[0]['data']);
         _sent = parse(results[1]['data']);
       });
+      for(final item in [..._received,..._sent]){
+        final userId=_read(item,['userId']);if(userId.isEmpty||_avatars.containsKey(userId))continue;
+        unawaited(widget.apiClient.getBytes('/user-profile/$userId/primary-photo',authenticated:true).then((bytes){if(mounted)setState(()=>_avatars[userId]=bytes);}).catchError((_){}));
+      }
     } catch (error) {
       if (mounted) setState(() => _error = error.toString().replaceFirst('ApiException: ', ''));
     } finally {
@@ -113,7 +120,7 @@ class _UserInterestsScreenState extends State<UserInterestsScreen> with SingleTi
           labelColor: AppPalette.maroon,
           unselectedLabelColor: AppPalette.secondary,
           indicatorColor: AppPalette.gold,
-          tabs: const [Tab(text: 'Received'), Tab(text: 'Sent')],
+          tabs: [Tab(text: 'Received (${_received.length})'), Tab(text: 'Sent (${_sent.length})')],
         ),
         actions: [IconButton(onPressed: _loading || _working ? null : _load, icon: const Icon(Icons.refresh, color: AppPalette.maroon))],
       ),
@@ -166,7 +173,7 @@ class _UserInterestsScreenState extends State<UserInterestsScreen> with SingleTi
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            CircleAvatar(backgroundColor: AppPalette.champagne, child: Text(name.isEmpty ? 'V' : name[0].toUpperCase(), style: const TextStyle(color: AppPalette.maroon))),
+            CircleAvatar(backgroundColor: AppPalette.champagne,backgroundImage:_avatars[_read(item,['userId'])]==null?null:MemoryImage(_avatars[_read(item,['userId'])]!),child:_avatars[_read(item,['userId'])]==null?Text(name.isEmpty?'V':name[0].toUpperCase(),style:const TextStyle(color:AppPalette.maroon)):null),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(name.isEmpty ? 'VedicVivah member' : name, style: const TextStyle(fontWeight: FontWeight.w600, color: AppPalette.darkMaroon)),
