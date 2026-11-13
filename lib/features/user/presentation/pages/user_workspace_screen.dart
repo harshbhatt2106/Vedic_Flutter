@@ -170,11 +170,18 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     panel(const Text('Existing advanced community, career, height and location preference values are retained when saving this form.',style:TextStyle(color:AppPalette.secondary,fontSize:12))),
   ];
   List<Widget> messages()=>[
-    if(items.isEmpty)panel(const Text('No conversations yet.')),
-    ...items.map((c)=>panel(ListTile(onTap:()=>openConversation(c),leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(c['otherUserName']?.toString()??'Member'),subtitle:Text(c['lastMessage']?.toString()??''),trailing:Text((c['unreadCount']??0).toString())))),
+    field('Search conversations',a),
+    if(items.where((c)=>(c['otherUserName']??'').toString().toLowerCase().contains(a.text.toLowerCase())).isEmpty)panel(const Text('No conversations found.')),
+    ...items.where((c)=>(c['otherUserName']??'').toString().toLowerCase().contains(a.text.toLowerCase())).map((c)=>panel(ListTile(onTap:()=>openConversation(c),leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(c['otherUserName']?.toString()??'Member'),subtitle:Text(c['lastMessage']?.toString()??''),trailing:PopupMenuButton<String>(onSelected:(v)=>deleteConversation(c['id'].toString()),itemBuilder:(_)=>const [PopupMenuItem(value:'delete',child:Text('Delete conversation'))])))),
   ];
+  Future<void> deleteConversation(String id)async{
+    final yes=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Delete conversation?'),content:const Text('This removes the conversation from your inbox.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete'))]));
+    if(yes!=true)return;
+    await run(()async{await widget.api.delete('/conversations/$id',authenticated:true);await load();});
+  }
   Future<void> openConversation(Map<String,dynamic> c)async{
     await showModalBottomSheet(context:context,isScrollControlled:true,builder:(ctx)=>_ConversationSheet(api:widget.api,conversation:c));
+    if(mounted)await load();
   }
   List<Widget> support()=>[
     panel(Column(children:[
@@ -210,10 +217,11 @@ class _ConversationSheetState extends State<_ConversationSheet>{
   @override void dispose(){text.dispose();super.dispose();}
   Future<void> load()async{try{final r=await widget.api.get('/conversations/'+id+'/messages?take=50',authenticated:true);final d=r['data'];messages=d is List?d.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];await widget.api.put('/conversations/'+id+'/read',body:{},authenticated:true);}catch(e){error=e.toString();}finally{if(mounted)setState(()=>loading=false);}}
   Future<void> send()async{if(text.text.trim().isEmpty)return;setState(()=>sending=true);try{await widget.api.post('/conversations/'+id+'/messages',body:{'content':text.text.trim()},authenticated:true);text.clear();await load();}catch(e){setState(()=>error=e.toString());}finally{if(mounted)setState(()=>sending=false);}}
+  Future<void> deleteMessage(String messageId)async{try{await widget.api.delete('/conversations/$id/messages/$messageId',authenticated:true);await load();}catch(e){if(mounted)setState(()=>error=e.toString());}}
   @override Widget build(BuildContext context)=>SafeArea(child:SizedBox(height:MediaQuery.of(context).size.height*.8,child:Column(children:[
     ListTile(title:Text(widget.conversation['otherUserName']?.toString()??'Conversation'),trailing:IconButton(onPressed:()=>Navigator.pop(context),icon:const Icon(Icons.close))),
     if(error!=null)Text(error!,style:const TextStyle(color:AppPalette.error)),
-    Expanded(child:loading?const Center(child:CircularProgressIndicator()):ListView(reverse:true,padding:const EdgeInsets.all(12),children:messages.reversed.map((m)=>Card(color:AppPalette.surface,child:Padding(padding:const EdgeInsets.all(10),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m['senderUserName']?.toString()??'',style:const TextStyle(fontSize:11,color:AppPalette.gold)),Text(m['content']?.toString()??'')])))).toList())),
+    Expanded(child:loading?const Center(child:CircularProgressIndicator()):ListView(reverse:true,padding:const EdgeInsets.all(12),children:messages.reversed.map((m)=>GestureDetector(onLongPress:()=>deleteMessage(m['id'].toString()),child:Card(color:AppPalette.surface,child:Padding(padding:const EdgeInsets.all(10),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m['senderUserName']?.toString()??'',style:const TextStyle(fontSize:11,color:AppPalette.gold)),Text(m['content']?.toString()??''),const Text('Long press to delete your message',style:TextStyle(fontSize:9,color:AppPalette.secondary))]))))).toList())),
     Padding(padding:const EdgeInsets.all(10),child:Row(children:[Expanded(child:TextField(controller:text,decoration:const InputDecoration(hintText:'Write a message'))),IconButton(onPressed:sending?null:send,icon:const Icon(Icons.send,color:AppPalette.maroon))])),
   ])));
 }
