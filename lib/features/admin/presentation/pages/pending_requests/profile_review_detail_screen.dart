@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import '../../../../app/theme/app_theme.dart';
-import '../../../../core/api/api_client.dart';
-import '../../data/models/admin_profile_review_models.dart';
+import '../../../../../app/theme/app_theme.dart';
+import '../../../../../core/api/api_client.dart';
+import '../../../data/models/admin_profile_review_models.dart';
 
 class ProfileReviewDetailScreen extends StatefulWidget {
   const ProfileReviewDetailScreen({
