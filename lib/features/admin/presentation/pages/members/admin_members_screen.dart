@@ -272,6 +272,7 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
       return;
     }
     if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
     String selectedMentorId = member.mentorUserId ?? '';
     bool busy = false;
     await showModalBottomSheet<void>(
@@ -316,16 +317,16 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
                           '/admin/user-mentor-assignments/${member.userId}/${member.mentorUserId}',
                           authenticated: true,
                         );
-                        if (!mounted) return;
+                        if (!mounted || !sheetContext.mounted) return;
                         setState(() {
                           _members = _members.map((item) => item.userId == member.userId
                               ? _copyWithMentor(item, name: null, mentorId: null)
                               : item).toList();
                         });
                         Navigator.of(sheetContext).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mentor assignment removed.')));
+                        messenger.showSnackBar(const SnackBar(content: Text('Mentor assignment removed.')));
                       } catch (error) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('ApiException: ', ''))));
+                        if (sheetContext.mounted) messenger.showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('ApiException: ', ''))));
                       } finally {
                         if (sheetContext.mounted) setSheetState(() => busy = false);
                       }
@@ -346,16 +347,16 @@ class _AdminMembersScreenState extends State<AdminMembersScreen> {
                         authenticated: true,
                       );
                       final mentor = _mentors.firstWhere((item) => item['id'] == selectedMentorId);
-                      if (!mounted) return;
+                      if (!mounted || !sheetContext.mounted) return;
                       setState(() {
                         _members = _members.map((item) => item.userId == member.userId
                             ? _copyWithMentor(item, name: mentor['name'], mentorId: selectedMentorId)
                             : item).toList();
                       });
                       Navigator.of(sheetContext).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Mentor assigned.')));
+                      messenger.showSnackBar(const SnackBar(content: Text('Mentor assigned.')));
                     } catch (error) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('ApiException: ', ''))));
+                      if (sheetContext.mounted) messenger.showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('ApiException: ', ''))));
                     } finally {
                       if (sheetContext.mounted) setSheetState(() => busy = false);
                     }
