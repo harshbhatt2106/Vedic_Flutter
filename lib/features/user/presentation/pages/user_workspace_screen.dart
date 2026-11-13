@@ -43,18 +43,23 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   bool loading=true,working=false; String? error,notice;
   List<Map<String,dynamic>> items=[]; Map<String,dynamic> data={};
   final a=TextEditingController(),b=TextEditingController(),c=TextEditingController(),d=TextEditingController(),e=TextEditingController();
+  final Map<String,TextEditingController> filters={for(final k in ['subCasteId','preferredGender','maritalStatus','motherTongue','education','profession','minYearlyIncome','maxYearlyIncome','minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','countryId','stateId','cityId','educationFieldId','courseId','qualificationId','occupationId','professionId','workType'])k:TextEditingController()};
+  int discoverPage=1,totalPages=1;
   String choice='Female',marital='Never Married';
   @override void initState(){super.initState();load();}
-  @override void dispose(){for(final x in [a,b,c,d,e]){x.dispose();}super.dispose();}
+  @override void dispose(){for(final x in [a,b,c,d,e,...filters.values]){x.dispose();}super.dispose();}
   String get title=>switch(widget.kind){'discover'=>'Find matches','profile'=>'Your biodata','preferences'=>'Partner preferences','messages'=>'Messages','support'=>'Help & support',_=>'Membership plans'};
   Future<void> load() async {
     setState(() { loading=true; error=null; });
     try {
       if(widget.kind=='discover'){
-        final query=Uri(queryParameters:{if(a.text.trim().isNotEmpty)'search':a.text.trim(),if(b.text.trim().isNotEmpty)'minAge':b.text.trim(),if(c.text.trim().isNotEmpty)'maxAge':c.text.trim(),if(d.text.trim().isNotEmpty)'religionId':d.text.trim(),if(e.text.trim().isNotEmpty)'casteId':e.text.trim(),'pageNumber':'1','pageSize':'20'}).query;
+        final params=<String,String>{'pageNumber':discoverPage.toString(),'pageSize':'20'};
+        for(final entry in {'search':a,'minAge':b,'maxAge':c,'religionId':d,'casteId':e}.entries){if(entry.value.text.trim().isNotEmpty)params[entry.key]=entry.value.text.trim();}
+        for(final entry in filters.entries){if(entry.value.text.trim().isNotEmpty)params[entry.key]=entry.value.text.trim();}
+        final query=Uri(queryParameters:params).query;
         final r=await widget.api.get('/user-profile/discover?'+query,authenticated:true);
         final raw=r['data']; final list=raw is Map?raw['items']:raw;
-        items=list is List?list.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];
+        final next=list is List?list.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():<Map<String,dynamic>>[];\n        items=discoverPage>1?[...items,...next]:next;\n        totalPages=(raw is Map?(raw['totalPages'] as num?)?.toInt():null)??1;
       } else if(widget.kind=='profile'){
         final r=await widget.api.get('/user-profile',authenticated:true); final raw=r['data'];
         if(raw is Map){data=Map<String,dynamic>.from(raw);a.text=data['firstName']?.toString()??'';b.text=data['lastName']?.toString()??'';c.text=data['dateOfBirth']?.toString().split('T').first??'';d.text=data['gender']?.toString()??'';e.text=data['aboutMe']?.toString()??'';}
@@ -99,14 +104,27 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
       if(widget.kind=='plans')...plans(),
     ]));
   }
+  Widget filterField(String label,String key,{bool numeric=false})=>SizedBox(width:150,child:TextField(controller:filters[key],keyboardType:numeric?TextInputType.number:TextInputType.text,decoration:InputDecoration(labelText:label,filled:true,isDense:true)));
   List<Widget> discover()=>[
-    panel(Column(children:[
+    panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       field('Name or keyword',a),
       Row(children:[Expanded(child:field('Min age',b,keyboard:TextInputType.number)),const SizedBox(width:8),Expanded(child:field('Max age',c,keyboard:TextInputType.number))]),
       Row(children:[Expanded(child:field('Religion ID',d,keyboard:TextInputType.number)),const SizedBox(width:8),Expanded(child:field('Caste ID',e,keyboard:TextInputType.number))]),
-      button('Apply filters',load),
+      const Text('More filters',style:TextStyle(fontWeight:FontWeight.w700,color:AppPalette.maroon)),
+      Wrap(spacing:8,runSpacing:8,children:[
+        filterField('Sub-caste ID','subCasteId',numeric:true),filterField('Preferred gender','preferredGender'),filterField('Marital status','maritalStatus'),
+        filterField('Mother tongue','motherTongue'),filterField('Education','education'),filterField('Profession','profession'),
+        filterField('Min yearly income','minYearlyIncome',numeric:true),filterField('Max yearly income','maxYearlyIncome',numeric:true),
+        filterField('Min height feet','minHeightFeet',numeric:true),filterField('Min height inches','minHeightInches',numeric:true),
+        filterField('Max height feet','maxHeightFeet',numeric:true),filterField('Max height inches','maxHeightInches',numeric:true),
+        filterField('Country ID','countryId',numeric:true),filterField('State ID','stateId',numeric:true),filterField('City ID','cityId',numeric:true),
+        filterField('Education field ID','educationFieldId',numeric:true),filterField('Course ID','courseId',numeric:true),filterField('Qualification ID','qualificationId',numeric:true),
+        filterField('Occupation ID','occupationId',numeric:true),filterField('Profession ID','professionId',numeric:true),filterField('Work type','workType'),
+      ]),
+      button('Apply filters',()=>{discoverPage=1;return load();}),
     ])),
     if(items.isEmpty)panel(const Text('No profiles found. Complete your profile and try again.')),
+    if(discoverPage<totalPages)button('Load more profiles',()=>{discoverPage++;return load();}),
     ...items.map((p){final id=(p['userId']??p['id']??'').toString();final name=(''+(p['firstName']??'').toString()+' '+(p['lastName']??'').toString()).trim();
       final details=[p['profession'],p['education'],p['cityName'],p['religionName'],p['casteName']].where((x)=>x!=null&&x.toString().isNotEmpty).join(' · ');
       return Padding(padding:const EdgeInsets.only(bottom:9),child:panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
