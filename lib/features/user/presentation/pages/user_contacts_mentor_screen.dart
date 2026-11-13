@@ -27,7 +27,7 @@ class _UserReferencesScreenState extends State<UserReferencesScreen>{
       if(editingId!=null)TextButton(onPressed:(){setState(()=>editingId=null);name.clear();phone.clear();city.clear();relation.clear();},child:const Text('Cancel editing')),
     ]))),
     if(refs.isEmpty)const Padding(padding:EdgeInsets.all(20),child:Text('No reference contacts added yet.')),
-    ...refs.map((r){final id=r['referenceId']?.toString()??'';return Card(color:AppPalette.surface,child:ListTile(title:Text(r['name']?.toString()??''),subtitle:Text('\${r['relationshipWithUser']??''} · \${r['phoneNumber']??''} · \${r['cityName']??''}'),trailing:PopupMenuButton<String>(onSelected:(v){if(v=='edit')edit(r);if(v=='delete')remove(id);},itemBuilder:(_)=>const [PopupMenuItem(value:'edit',child:Text('Edit')),PopupMenuItem(value:'delete',child:Text('Delete'))])));}),
+    ...refs.map((r){final id=r['referenceId']?.toString()??'';return Card(color:AppPalette.surface,child:ListTile(title:Text(r['name']?.toString()??''),subtitle:Text('${r['relationshipWithUser']??''} · ${r['phoneNumber']??''} · ${r['cityName']??''}'),trailing:PopupMenuButton<String>(onSelected:(v){if(v=='edit')edit(r);if(v=='delete')remove(id);},itemBuilder:(_)=>const [PopupMenuItem(value:'edit',child:Text('Edit')),PopupMenuItem(value:'delete',child:Text('Delete'))])));}),
   ]));}
 }
 
@@ -43,10 +43,10 @@ class _UserMentorScreenState extends State<UserMentorScreen>{
   @override Widget build(BuildContext context){if(loading)return const Center(child:CircularProgressIndicator());return RefreshIndicator(onRefresh:load,child:ListView(padding:const EdgeInsets.all(14),children:[
     const Text('Your mentor',style:TextStyle(fontSize:22,color:AppPalette.darkMaroon)),
     if(error!=null)Text(error!,style:const TextStyle(color:AppPalette.error)),
-    Card(color:AppPalette.surface,child:ListTile(leading:const CircleAvatar(child:Icon(Icons.support_agent)),title:Text(current==null?'No mentor selected':'\${current!['firstName']??''} \${current!['lastName']??''}'),subtitle:const Text('Currently assigned mentor'))),
-    if(suggestion!=null)Card(color:AppPalette.surface,child:ListTile(title:const Text('Suggested mentor'),subtitle:Text('\${suggestion!['firstName']??''} \${suggestion!['lastName']??''}'),trailing:TextButton(onPressed:busy?null:()=>select(suggestion!['mentorUserId'].toString()),child:const Text('Select')))),
+    Card(color:AppPalette.surface,child:ListTile(leading:const CircleAvatar(child:Icon(Icons.support_agent)),title:Text(current==null?'No mentor selected':'${current!['firstName']??''} ${current!['lastName']??''}'),subtitle:const Text('Currently assigned mentor'))),
+    if(suggestion!=null)Card(color:AppPalette.surface,child:ListTile(title:const Text('Suggested mentor'),subtitle:Text('${suggestion!['firstName']??''} ${suggestion!['lastName']??''}'),trailing:TextButton(onPressed:busy?null:()=>select(suggestion!['mentorUserId'].toString()),child:const Text('Select')))),
     const Padding(padding:EdgeInsets.symmetric(vertical:10),child:Text('Available mentors',style:TextStyle(fontWeight:FontWeight.w700))),
     if(mentors.isEmpty)const Text('No mentors are currently available in your location. Contact the VedicVivah team for assistance.'),
-    ...mentors.map((m){final id=m['mentorUserId']?.toString()??'';return Card(color:AppPalette.surface,child:ListTile(title:Text('\${m['firstName']??''} \${m['lastName']??''}'),trailing:TextButton(onPressed:busy||id.isEmpty?null:()=>select(id),child:const Text('Select'))));}),
+    ...mentors.map((m){final id=m['mentorUserId']?.toString()??'';return Card(color:AppPalette.surface,child:ListTile(title:Text('${m['firstName']??''} ${m['lastName']??''}'),trailing:TextButton(onPressed:busy||id.isEmpty?null:()=>select(id),child:const Text('Select'))));}),
   ]));}
 }
