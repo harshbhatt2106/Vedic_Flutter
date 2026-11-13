@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../../app/theme/app_theme.dart';
-import '../../../../core/api/api_client.dart';
-import '../../data/models/admin_profile_review_models.dart';
+import '../../../../../app/theme/app_theme.dart';
+import '../../../../../core/api/api_client.dart';
+import '../../../data/models/admin_profile_review_models.dart';
 import 'profile_review_detail_screen.dart';
 
 class PendingRequestsScreen extends StatefulWidget {
@@ -318,7 +318,7 @@ class _ProfileQueueCard extends StatelessWidget {
       profile.gender,
       profile.profession ?? profile.education,
       profile.cityName,
-    ].where((value) => value != null && value.isNotEmpty).join(' · ');
+    ].whereType<String>().where((value) => value.isNotEmpty).join(' · ');
     return Card(
       margin: const EdgeInsets.only(bottom: 9),
       color: AppPalette.surface,
