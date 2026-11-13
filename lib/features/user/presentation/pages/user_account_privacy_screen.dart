@@ -46,13 +46,13 @@ class _AccountSettingsTabState extends State<_AccountSettingsTab>{
           :step==2
             ?Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
               const Text('Did you find your match on VedicVivah?'),
-              RadioListTile<bool>(contentPadding:EdgeInsets.zero,value:true,groupValue:married,onChanged:(v)=>setDialog(()=>married=v),title:const Text('Yes, I found my partner here')),
+              RadioListTile<bool>(contentPadding:EdgeInsets.zero,value:true,groupValue:married,onChanged:(v)=>setDialog((){married=v;}),title:const Text('Yes, I found my partner here')),
               RadioListTile<bool>(contentPadding:EdgeInsets.zero,value:false,groupValue:married,onChanged:(v)=>setDialog(()=>married=v),title:const Text('No')),
             ])
             :Text(married==true?'Congratulations on finding your partner. Your account will be marked as married and removed.':'Your account and all associated data will be permanently removed.'),
         actions:[if(step==1)TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),
-          if(step>1)TextButton(onPressed:()=>setDialog(()=>step--),child:const Text('Back')),
-          if(step<3)FilledButton(onPressed:()=>{if(step==1){setDialog(()=>step=2);}else if(married!=null){setDialog(()=>step=3);}},child:Text(step==1?'Continue':'Next')),
+          if(step>1)TextButton(onPressed:()=>setDialog((){step--;}),child:const Text('Back')),
+          if(step<3)FilledButton(onPressed:(){if(step==1){setDialog((){step=2;});}else if(married!=null){setDialog((){step=3;});}},child:Text(step==1?'Continue':'Next')),
           if(step==3)FilledButton(style:FilledButton.styleFrom(backgroundColor:AppPalette.error),onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete my account forever')),
         ],
       );
