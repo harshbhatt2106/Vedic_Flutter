@@ -54,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
         child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 460), child: Container(
           padding: EdgeInsets.all(constraints.maxWidth < 390 ? 22 : 30),
-          decoration: BoxDecoration(color: AppPalette.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppPalette.border), boxShadow: [BoxShadow(color: AppPalette.darkMaroon.withOpacity(.055), blurRadius: 35, offset: const Offset(0, 15))]),
+          decoration: BoxDecoration(color: AppPalette.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppPalette.border), boxShadow: [BoxShadow(color: AppPalette.darkMaroon.withValues(alpha: .055), blurRadius: 35, offset: const Offset(0, 15))]),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const AuthBrandHeader(eyebrow: 'A trusted matrimonial space', title: 'Welcome\nback.', subtitle: 'Continue your journey toward a meaningful connection, guided by tradition and protected with care.'),
             const SizedBox(height: 28),

@@ -47,7 +47,7 @@ class ApiClient {
       if (response.statusCode == 401 && authenticated && retryAfterRefresh && !path.startsWith('/auth/')) {
         final refreshed = await _refreshSession();
         if (refreshed) {
-          return _send(path, body: body, authenticated: true, retryAfterRefresh: false);
+          return await _send(path, body: body, authenticated: true, retryAfterRefresh: false);
         }
         await _sessionStore.clear();
         throw const ApiException(message: 'Your session has expired. Please sign in again.', statusCode: 401);

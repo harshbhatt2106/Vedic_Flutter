@@ -110,7 +110,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       padding: const EdgeInsets.fromLTRB(22, 8, 22, 30),
       child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 460), child: Container(
         padding: const EdgeInsets.all(26),
-        decoration: BoxDecoration(color: AppPalette.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppPalette.border), boxShadow: [BoxShadow(color: AppPalette.darkMaroon.withOpacity(.05), blurRadius: 30, offset: const Offset(0, 14))]),
+        decoration: BoxDecoration(color: AppPalette.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppPalette.border), boxShadow: [BoxShadow(color: AppPalette.darkMaroon.withValues(alpha: .05), blurRadius: 30, offset: const Offset(0, 14))]),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           AuthBrandHeader(eyebrow: _registrationId == null ? 'Your details' : 'Email verification', title: _registrationId == null ? 'A meaningful\nbeginning.' : 'Verify your\nemail address.', subtitle: _registrationId == null ? 'Create your VedicVivah account with the details below.' : 'Enter the six-digit verification code sent to your registered email address.'),
           const SizedBox(height: 24),

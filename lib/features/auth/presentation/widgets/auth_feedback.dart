@@ -12,7 +12,7 @@ class AuthFeedback extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(color: color.withOpacity(.07), border: Border.all(color: color.withOpacity(.25)), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: color.withValues(alpha: .07), border: Border.all(color: color.withValues(alpha: .25)), borderRadius: BorderRadius.circular(12)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Icon(isSuccess ? Icons.check_circle_outline : Icons.info_outline, color: color, size: 18),
         const SizedBox(width: 10),
