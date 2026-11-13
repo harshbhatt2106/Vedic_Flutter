@@ -165,7 +165,7 @@ class _UserPanelShellState extends State<UserPanelShell> {
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.blocked, onOpenMenu: _openSidebar),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.reports, onOpenMenu: _openSidebar),
       UserInterestsScreen(apiClient: widget.apiClient, onOpenChat: ()=>_navigateFromDashboard(14), onOpenMenu: _openSidebar),
-      UserWorkspaceScreen(apiClient: widget.apiClient, initialTab: _workspaceInitialTab, subscriptionExpired: _subscriptionExpired, approvalRestricted: _approvalRestricted, onSubscriptionCheck: (){_loadAccountAccess();}, onOpenMenu: _openSidebar),
+      UserWorkspaceScreen(apiClient: widget.apiClient, initialTab: _workspaceInitialTab, subscriptionExpired: _subscriptionExpired, approvalRestricted: _approvalRestricted, onSubscriptionCheck: (){_loadAccountAccess();}, onOpenMenu: _openSidebar, onWorkspaceTabChanged: (tab){if(mounted&&_workspaceInitialTab!=tab)setState(()=>_workspaceInitialTab=tab);}),
       UserAccountPrivacyScreen(apiClient: widget.apiClient, onSignOut: widget.onSignOut, onOpenMenu: _openSidebar),
     ];
     return Scaffold(
