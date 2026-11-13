@@ -20,9 +20,105 @@ class UserPanelShell extends StatefulWidget {
 }
 
 class _UserPanelShellState extends State<UserPanelShell> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _index = 0;
   int _workspaceInitialTab = 0;
   void _navigateFromDashboard(int target){setState((){if(target>=10){_workspaceInitialTab=target-10;_index=6;}else{_index=target;}});}
+  void _openSidebar() {
+    _scaffoldKey.currentState?.openDrawer();
+  }
+  void _selectPanel(int index, {int? workspaceTab}) {
+    final allowed = _subscriptionExpired
+        ? const {0, 6, 7}
+        : _approvalRestricted
+            ? const {0, 1, 6}
+            : const {0, 1, 2, 3, 4, 5, 6, 7};
+    Navigator.of(context).pop();
+    if (!allowed.contains(index)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This section is unavailable until your profile or subscription status is resolved.')),
+      );
+      return;
+    }
+    setState(() {
+      _index = index;
+      if (index == 6) _workspaceInitialTab = workspaceTab ?? 0;
+    });
+    if (index == 6 || index == 7) _loadAccountAccess();
+  }
+  Widget _drawerItem({
+    required IconData icon,
+    required String title,
+    required bool selected,
+    required VoidCallback onTap,
+  }) => ListTile(
+    leading: Icon(icon, color: selected ? AppPalette.maroon : AppPalette.secondary),
+    title: Text(title, style: TextStyle(
+      color: selected ? AppPalette.darkMaroon : AppPalette.ink,
+      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+      fontSize: 14,
+    )),
+    selected: selected,
+    selectedColor: AppPalette.maroon,
+    selectedTileColor: AppPalette.champagne.withValues(alpha: .55),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 18),
+    onTap: onTap,
+  );
+  Widget _buildSidebar() => Drawer(
+    backgroundColor: AppPalette.background,
+    child: SafeArea(child: Column(children: [
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppPalette.darkMaroon, AppPalette.maroon],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Icons.favorite_rounded, color: AppPalette.gold, size: 25),
+          SizedBox(height: 10),
+          Text('VedicVivah', style: TextStyle(
+            color: Colors.white, fontSize: 23, fontWeight: FontWeight.w700,
+          )),
+          SizedBox(height: 3),
+          Text('YOUR PERSONAL SPACE', style: TextStyle(
+            color: AppPalette.champagne, fontSize: 10,
+            letterSpacing: 1.5, fontWeight: FontWeight.w600,
+          )),
+        ]),
+      ),
+      Expanded(child: ListView(padding: const EdgeInsets.fromLTRB(10, 12, 10, 16), children: [
+        _drawerItem(icon: Icons.home_outlined, title: 'Dashboard', selected: _index == 0, onTap: () => _selectPanel(0)),
+        _drawerItem(icon: Icons.notifications_none_rounded, title: 'Notifications', selected: _index == 1, onTap: () => _selectPanel(1)),
+        _drawerItem(icon: Icons.favorite_border_rounded, title: 'Shortlisted Profiles', selected: _index == 2, onTap: () => _selectPanel(2)),
+        _drawerItem(icon: Icons.block_outlined, title: 'Blocked Users', selected: _index == 3, onTap: () => _selectPanel(3)),
+        _drawerItem(icon: Icons.flag_outlined, title: 'My Reports', selected: _index == 4, onTap: () => _selectPanel(4)),
+        _drawerItem(icon: Icons.favorite_outline_rounded, title: 'Interests', selected: _index == 5, onTap: () => _selectPanel(5)),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 18, 12, 7),
+          child: Text('MY WORKSPACE', style: TextStyle(
+            color: AppPalette.secondary, fontSize: 10,
+            fontWeight: FontWeight.w700, letterSpacing: 1.3,
+          )),
+        ),
+        _drawerItem(icon: Icons.search_rounded, title: 'Find Matches', selected: _index == 6 && _workspaceInitialTab == 0, onTap: () => _selectPanel(6, workspaceTab: 0)),
+        _drawerItem(icon: Icons.person_outline_rounded, title: 'My Profile / Biodata', selected: _index == 6 && _workspaceInitialTab == 1, onTap: () => _selectPanel(6, workspaceTab: 1)),
+        _drawerItem(icon: Icons.photo_library_outlined, title: 'Photos', selected: _index == 6 && _workspaceInitialTab == 2, onTap: () => _selectPanel(6, workspaceTab: 2)),
+        _drawerItem(icon: Icons.tune_rounded, title: 'Partner Preferences', selected: _index == 6 && _workspaceInitialTab == 3, onTap: () => _selectPanel(6, workspaceTab: 3)),
+        _drawerItem(icon: Icons.chat_bubble_outline_rounded, title: 'Chat / Messages', selected: _index == 6 && _workspaceInitialTab == 4, onTap: () => _selectPanel(6, workspaceTab: 4)),
+        _drawerItem(icon: Icons.support_agent_outlined, title: 'Support', selected: _index == 6 && _workspaceInitialTab == 5, onTap: () => _selectPanel(6, workspaceTab: 5)),
+        _drawerItem(icon: Icons.workspace_premium_outlined, title: 'Subscription', selected: _index == 6 && _workspaceInitialTab == 6, onTap: () => _selectPanel(6, workspaceTab: 6)),
+        _drawerItem(icon: Icons.contacts_outlined, title: 'Reference Contacts', selected: _index == 6 && _workspaceInitialTab == 7, onTap: () => _selectPanel(6, workspaceTab: 7)),
+        _drawerItem(icon: Icons.support_agent_rounded, title: 'Mentor', selected: _index == 6 && _workspaceInitialTab == 8, onTap: () => _selectPanel(6, workspaceTab: 8)),
+        const Divider(height: 24, color: AppPalette.border),
+        _drawerItem(icon: Icons.privacy_tip_outlined, title: 'Account & Privacy', selected: _index == 7, onTap: () => _selectPanel(7)),
+      ])),
+    ])),
+  );
   bool _policyLoading = true;
   String? _policyError;
   bool _subscriptionExpired = false;
@@ -63,16 +159,18 @@ class _UserPanelShellState extends State<UserPanelShell> {
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      UserDashboardScreen(apiClient: widget.apiClient, session: widget.session, onSignOut: widget.onSignOut, onNavigate: _navigateFromDashboard),
-      UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.notifications),
-      UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.shortlist),
-      UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.blocked),
-      UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.reports),
-      UserInterestsScreen(apiClient: widget.apiClient, onOpenChat: ()=>_navigateFromDashboard(14)),
-      UserWorkspaceScreen(apiClient: widget.apiClient, initialTab: _workspaceInitialTab, subscriptionExpired: _subscriptionExpired, approvalRestricted: _approvalRestricted, onSubscriptionCheck: (){_loadAccountAccess();}),
-      UserAccountPrivacyScreen(apiClient: widget.apiClient, onSignOut: widget.onSignOut),
+      UserDashboardScreen(apiClient: widget.apiClient, session: widget.session, onSignOut: widget.onSignOut, onNavigate: _navigateFromDashboard, onOpenMenu: _openSidebar),
+      UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.notifications, onOpenMenu: _openSidebar),
+      UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.shortlist, onOpenMenu: _openSidebar),
+      UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.blocked, onOpenMenu: _openSidebar),
+      UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.reports, onOpenMenu: _openSidebar),
+      UserInterestsScreen(apiClient: widget.apiClient, onOpenChat: ()=>_navigateFromDashboard(14), onOpenMenu: _openSidebar),
+      UserWorkspaceScreen(apiClient: widget.apiClient, initialTab: _workspaceInitialTab, subscriptionExpired: _subscriptionExpired, approvalRestricted: _approvalRestricted, onSubscriptionCheck: (){_loadAccountAccess();}, onOpenMenu: _openSidebar),
+      UserAccountPrivacyScreen(apiClient: widget.apiClient, onSignOut: widget.onSignOut, onOpenMenu: _openSidebar),
     ];
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: _buildSidebar(),
       backgroundColor: AppPalette.background,
       body: Stack(children:[
         if(_policyError!=null)Positioned.fill(child:Scaffold(backgroundColor:AppPalette.background,body:Center(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.shield_outlined,size:42,color:AppPalette.maroon),const SizedBox(height:12),const Text('Unable to verify required privacy policies.',textAlign:TextAlign.center,style:TextStyle(fontWeight:FontWeight.w700)),const SizedBox(height:8),Text(_policyError!,textAlign:TextAlign.center),const SizedBox(height:12),FilledButton(onPressed:_checkPendingPolicies,child:const Text('Retry'))]))))),
