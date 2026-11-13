@@ -8,14 +8,16 @@ import 'user_profile_editor_screen.dart';
 import '../../data/chat_realtime_service.dart';
 
 class UserWorkspaceScreen extends StatefulWidget {
-  const UserWorkspaceScreen({super.key, required this.apiClient});
+  const UserWorkspaceScreen({super.key, required this.apiClient, this.initialTab = 0});
   final ApiClient apiClient;
+  final int initialTab;
   @override
   State<UserWorkspaceScreen> createState() => _UserWorkspaceScreenState();
 }
 class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTickerProviderStateMixin {
   late final TabController tabs;
-  @override void initState(){super.initState();tabs=TabController(length:9,vsync:this);}
+  @override void initState(){super.initState();tabs=TabController(length:9,initialIndex:widget.initialTab.clamp(0,8),vsync:this);}
+  @override void didUpdateWidget(covariant UserWorkspaceScreen oldWidget){super.didUpdateWidget(oldWidget);if(oldWidget.initialTab!=widget.initialTab)tabs.animateTo(widget.initialTab.clamp(0,8));}
   @override void dispose(){tabs.dispose();super.dispose();}
   @override Widget build(BuildContext context)=>Scaffold(
     backgroundColor:AppPalette.background,
