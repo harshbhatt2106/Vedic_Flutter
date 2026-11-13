@@ -3,6 +3,7 @@ import '../../../../../app/theme/app_theme.dart';
 import '../../../../../core/api/api_client.dart';
 import '../../../../auth/data/models/auth_models.dart';
 import '../dashboard/admin_dashboard_screen.dart';
+import '../pending_requests/pending_requests_screen.dart';
 
 class AdminShellScreen extends StatefulWidget {
   const AdminShellScreen({
@@ -115,14 +116,19 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
           ]),
         ),
       ),
-      body: _selected == 'Dashboard'
-          ? AdminDashboardScreen(
-              key: const ValueKey('admin-dashboard'),
-              apiClient: widget.apiClient,
-              userName: widget.session.userName,
-              onOpenModule: _select,
-            )
-          : _ModuleNotImplementedScreen(module: _selected),
+      body: switch (_selected) {
+        'Dashboard' => AdminDashboardScreen(
+            key: const ValueKey('admin-dashboard'),
+            apiClient: widget.apiClient,
+            userName: widget.session.userName,
+            onOpenModule: _select,
+          ),
+        'Profile Reviews' => PendingRequestsScreen(
+            key: const ValueKey('admin-profile-reviews'),
+            apiClient: widget.apiClient,
+          ),
+        _ => _ModuleNotImplementedScreen(module: _selected),
+      },
     );
   }
 }
