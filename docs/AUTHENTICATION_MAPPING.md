@@ -14,7 +14,7 @@
 - Web session: src/features/auth/session.ts.
 - Backend startup/security: VedicVivah/Program.cs.
 
-This document maps existing behavior. Flutter does not add server-side fields or bypass backend validation.
+This document maps existing behavior only. Flutter does not add server-side fields or bypass backend validation.
 
 ## Existing web flows
 
@@ -36,9 +36,9 @@ This document maps existing behavior. Flutter does not add server-side fields or
 3. Username is trimmed and lowercased; email is trimmed; mobile is digits only.
 4. POST /api/auth/register body: userName, email, phoneNumber, password.
 5. Backend returns data.registrationId; UI moves to six-digit email OTP.
-6. POST /api/auth/verify-email verifies the OTP; success activates account and web redirects to Login.
+6. POST /api/auth/verify-email verifies OTP; success activates account and web redirects to Login.
 7. Web resend cooldown is 60 seconds, maximum three resends (four sends including initial).
-8. No confirm-password field or terms checkbox exists in this web registration form or backend RegisterRequest. Mobile is collected, but verification is email OTP.
+8. No confirm-password field or terms checkbox exists in the web registration form or backend RegisterRequest. Mobile is collected, but verification is email OTP.
 
 ### Forgot password
 1. Email → POST /api/auth/forgot-password → data.resetRequestId.
@@ -48,7 +48,7 @@ This document maps existing behavior. Flutter does not add server-side fields or
 
 ## Backend endpoint contracts
 
-All paths below are appended to the /api base. JSON properties use camelCase.
+All paths are appended to the /api base. JSON properties use camelCase.
 
 | Method | Path | Request JSON | Success response |
 |---|---|---|---|
@@ -64,7 +64,6 @@ All paths below are appended to the /api base. JSON properties use camelCase.
 | POST | /auth/reset-password | { resetRequestId, newPassword } | { success, message } |
 
 ### Request validation from AuthController
-
 - RegisterRequest.userName: required, 3–30 chars, ^[a-zA-Z0-9._]+$.
 - RegisterRequest.email: required, .NET EmailAddress.
 - RegisterRequest.phoneNumber: required, ^\+?[0-9]{7,15}$.
@@ -91,7 +90,7 @@ The web mobile rule is stricter than the backend phone regex: web requires exact
 - OTP lifetime: 10 minutes. Registration lifetime: 30 minutes.
 - Backend resend cooldown: 60 seconds; initial send plus up to three additional sends per hour.
 - Email OTP verification allows at most five attempts.
-- Successful verification activates the account, removes verification record, creates a profile stub, optionally assigns the configured default mentor and assigns a trial subscription. Handler fallback trial duration is 60 days.
+- Successful verification activates the account, removes verification record, creates a profile stub, optionally assigns configured default mentor and assigns a trial subscription (handler fallback: 60 days).
 
 ### Login / tokens
 - Backend looks up identifier and verifies password using the password hasher.
@@ -114,7 +113,7 @@ The web mobile rule is stricter than the backend phone regex: web requires exact
 Global exception handler returns { success: false, message }.
 - Application validation/business error: HTTP 400.
 - Duplicate/conflict: HTTP 409.
-- Unauthorized: HTTP 401 (backend handler message: “Unauthorized.”).
+- Unauthorized: HTTP 401 (backend message: “Unauthorized.”).
 - Missing resource: HTTP 404.
 - Serialization/concurrency conflict: HTTP 409.
 - Unexpected server error: HTTP 500 with generic message.
@@ -125,7 +124,7 @@ Global exception handler returns { success: false, message }.
 | Flutter file | Responsibility |
 |---|---|
 | lib/core/config/app_config.dart | API root from API_BASE_URL dart-define; no host hardcoded |
-| lib/core/api/api_client.dart | JSON HTTP requests, timeout, bearer header support, error parsing |
+| lib/core/api/api_client.dart | JSON HTTP requests, bearer header, timeout, error parsing and one-time refresh retry for authenticated calls |
 | lib/core/errors/api_exception.dart | Structured HTTP error |
 | lib/core/storage/session_store.dart | Secure persistent session for Remember Me; memory-only otherwise |
 | lib/features/auth/data/models/auth_models.dart | Auth/session response parsing |
@@ -137,20 +136,20 @@ Global exception handler returns { success: false, message }.
 | lib/features/auth/presentation/screens/forgot_password_screen.dart | Email → OTP → new password |
 | lib/features/auth/presentation/screens/auth_gate.dart | Persistent session restoration |
 | lib/app/theme/app_theme.dart | Royal Indian Heritage palette |
-| test/unit/auth_validation_test.dart | Local input validation tests |
+| test/unit/auth_validation_test.dart | Local validation tests |
 | test/unit/auth_models_test.dart | Backend response parsing tests |
 
 ## Session persistence
-
 - Remember Me on: full session persisted in Android encrypted secure storage.
 - Remember Me off: session stays in process memory and is not restored after app termination.
-- Startup reads a persistent session. If access token is expired and refresh token has not expired, Flutter calls POST /auth/refresh and replaces token values.
-- A server/auth failure during refresh clears the stored session. A network/configuration failure retains it to avoid silently signing out during temporary connectivity loss.
-- Passwords and OTP values are never persisted or logged.
+- Startup reads persistent session. If access token is expired and refresh token remains valid, Flutter calls POST /auth/refresh and replaces both tokens.
+- Authenticated API calls can retry once after a 401 using the refresh token; a failed refresh clears the local session.
+- A temporary network/configuration failure during startup refresh retains the stored session rather than silently signing out.
+- Passwords and OTPs are never persisted or logged.
 
 ## Build configuration and known limits
 
-Provide the backend API root, including /api, at build time:
+Pass the backend API root, including /api:
 
     flutter run --dart-define=API_BASE_URL=https://YOUR_BACKEND_HOST/api
 
@@ -160,6 +159,6 @@ Before this phase, the repository contained architecture documentation and folde
 
     flutter create --platforms=android .
 
-Then run flutter pub get, flutter analyze and flutter test. This execution environment does not have Flutter/Dart/Android SDK available, so those commands and live API/device scenarios cannot be truthfully reported as run here.
+Then run flutter pub get, flutter analyze and flutter test. Flutter/Dart/Android SDK are not available in this execution environment, so analyzer, emulator and live API scenarios cannot be reported as run here.
 
-The successful-auth destination in this phase is an explicit role landing placeholder. Actual Admin, User and Mentor dashboards are separate feature implementation and were not fabricated as part of authentication.
+The successful-auth destination in this phase is an explicit role landing placeholder. Actual Admin, User and Mentor dashboards are separate feature work and were not fabricated as part of authentication.
