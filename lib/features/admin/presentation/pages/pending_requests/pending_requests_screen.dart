@@ -177,7 +177,7 @@ class _PendingRequestsScreenState extends State<PendingRequestsScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
         children: [
-          Text('PROFILE MODERATION', style: TextStyle(fontFamily: 'sans-serif', color: AppPalette.gold, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w700)),
+          const Text('PROFILE MODERATION', style: TextStyle(fontFamily: 'sans-serif', color: AppPalette.gold, fontSize: 10, letterSpacing: 1.8, fontWeight: FontWeight.w700)),
           const SizedBox(height: 5),
           Text('Review applications', style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 5),
