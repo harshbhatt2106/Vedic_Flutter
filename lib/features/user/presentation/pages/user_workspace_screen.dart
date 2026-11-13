@@ -487,15 +487,21 @@ Align(alignment:Alignment.centerLeft,child:Text('Match gender: ${choice.isEmpty?
     if(items.isEmpty)panel(const Text('No queries yet.')),
     ...items.map((t)=>panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(t['status']?.toString()??'Open',style:const TextStyle(color:AppPalette.gold,fontWeight:FontWeight.w700)),Text(t['message']?.toString()??''),if(t['adminReply']!=null)Text('Admin reply: '+t['adminReply'].toString())]))),
   ];
+  String _dateLabel(dynamic raw){final date=DateTime.tryParse(raw?.toString()??'');if(date==null)return 'Not available';return '${date.day.toString().padLeft(2,'0')}/${date.month.toString().padLeft(2,'0')}/${date.year}';}
   List<Widget> plans()=>[
-    panel(Text(data.isEmpty?'No current subscription.':'Current plan: '+(data['planName']??'Free').toString()+' · '+(data['isExpired']==true?'Expired':'Active'))),
+    panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      Text(data.isEmpty?'No current subscription.':'Current plan: ${data['planName']??'Free'} · ${data['isExpired']==true?'Expired':'Active'}',style:const TextStyle(fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),
+      if(data['expiresAtUtc']!=null)Text('Expires: ${_dateLabel(data['expiresAtUtc'])}'),
+      if(data['expiresAtUtc']!=null&&data['isExpired']!=true)Text('${DateTime.tryParse(data['expiresAtUtc'].toString())?.difference(DateTime.now()).inDays.clamp(0,9999)??0} days remaining'),
+    ])),
     if(items.isEmpty)panel(const Text('No active plans are currently available.')),
     ...items.map((p)=>panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
       Text(p['name']?.toString()??'Plan',style:const TextStyle(fontSize:18,fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),
       Text('₹'+(p['price']??'').toString()+' / '+(p['durationMonths']??'').toString()+' months',style:const TextStyle(color:AppPalette.gold,fontWeight:FontWeight.w700)),
       Text(p['shortDescription']?.toString()??''),
+      if((p['description']??'').toString().trim().isNotEmpty)Text(p['description'].toString()),
       if(p['features'] is List)...(p['features'] as List).map((f)=>Text('• '+f.toString())),
-      const Text('Payment gateway is not available yet. Contact Support to activate this plan.',style:TextStyle(fontSize:12,color:AppPalette.secondary)),
+      const Text('Payment gateway is not available in the current Web User Panel. Contact Support to activate a plan.',style:TextStyle(fontSize:12,color:AppPalette.secondary)),
     ]))),
   ];
 }
