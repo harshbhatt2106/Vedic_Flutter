@@ -9,9 +9,10 @@ import 'user_profile_editor_screen.dart';
 import '../../data/chat_realtime_service.dart';
 
 class UserWorkspaceScreen extends StatefulWidget {
-  const UserWorkspaceScreen({super.key, required this.apiClient, this.initialTab = 0});
+  const UserWorkspaceScreen({super.key, required this.apiClient, this.initialTab = 0, this.subscriptionExpired = false, this.approvalRestricted = false});
   final ApiClient apiClient;
   final int initialTab;
+  final bool subscriptionExpired,approvalRestricted;
   @override
   State<UserWorkspaceScreen> createState() => _UserWorkspaceScreenState();
 }
@@ -20,21 +21,35 @@ class _UserWorkspaceScreenState extends State<UserWorkspaceScreen> with SingleTi
   @override void initState(){super.initState();tabs=TabController(length:9,initialIndex:widget.initialTab.clamp(0,8).toInt(),vsync:this);}
   @override void didUpdateWidget(covariant UserWorkspaceScreen oldWidget){super.didUpdateWidget(oldWidget);if(oldWidget.initialTab!=widget.initialTab)tabs.animateTo(widget.initialTab.clamp(0,8).toInt());}
   @override void dispose(){tabs.dispose();super.dispose();}
+  Widget _tab(String kind,Widget child){
+    final blocked=(widget.subscriptionExpired&&const {'discover','preferences','messages','mentor'}.contains(kind))||
+      (widget.approvalRestricted&&const {'discover','preferences','messages','plans','mentor'}.contains(kind));
+    if(!blocked)return child;
+    final expired=widget.subscriptionExpired;
+    return Center(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[
+      const Icon(Icons.lock_outline,size:42,color:AppPalette.maroon),
+      const SizedBox(height:12),
+      Text(expired?'Your subscription has expired.':'Your profile is awaiting approval.',textAlign:TextAlign.center,style:const TextStyle(fontWeight:FontWeight.w700,color:AppPalette.darkMaroon)),
+      const SizedBox(height:8),
+      Text(expired?'Renew your plan to continue discovering profiles and messaging.':'This section becomes available after your profile is approved.',textAlign:TextAlign.center),
+      if(expired)TextButton(onPressed:()=>tabs.animateTo(6),child:const Text('View plans')),
+    ])));
+  }
   @override Widget build(BuildContext context)=>Scaffold(
     backgroundColor:AppPalette.background,
     appBar:AppBar(backgroundColor:AppPalette.background,title:const Text('Your account',style:TextStyle(color:AppPalette.darkMaroon)),
       bottom:TabBar(controller:tabs,isScrollable:true,labelColor:AppPalette.maroon,unselectedLabelColor:AppPalette.secondary,indicatorColor:AppPalette.gold,
         tabs:const [Tab(text:'Find matches'),Tab(text:'Profile'),Tab(text:'Photos'),Tab(text:'Preferences'),Tab(text:'Messages'),Tab(text:'Support'),Tab(text:'Plans'),Tab(text:'References'),Tab(text:'Mentor')])),
     body:TabBarView(controller:tabs,children:[
-      _WorkspaceTab(api:widget.apiClient,kind:'discover'),
+      _tab('discover',_WorkspaceTab(api:widget.apiClient,kind:'discover')),
       UserProfileEditorScreen(apiClient:widget.apiClient),
       UserPhotosScreen(apiClient:widget.apiClient),
-      _WorkspaceTab(api:widget.apiClient,kind:'preferences'),
-      _WorkspaceTab(api:widget.apiClient,kind:'messages'),
+      _tab('preferences',_WorkspaceTab(api:widget.apiClient,kind:'preferences')),
+      _tab('messages',_WorkspaceTab(api:widget.apiClient,kind:'messages')),
       _WorkspaceTab(api:widget.apiClient,kind:'support'),
-      _WorkspaceTab(api:widget.apiClient,kind:'plans'),
+      _tab('plans',_WorkspaceTab(api:widget.apiClient,kind:'plans')),
       UserReferencesScreen(apiClient:widget.apiClient),
-      UserMentorScreen(apiClient:widget.apiClient),
+      _tab('mentor',UserMentorScreen(apiClient:widget.apiClient)),
     ]),
   );
 }
@@ -56,7 +71,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   int discoverPage=1,totalPages=1;
   String choice='Female',marital='Never Married';
   @override void initState(){super.initState();load();}
-  @override void dispose(){for(final x in [a,b,c,d,e,...filters.values]){x.dispose();}super.dispose();}
+  @override void dispose(){for(final x in [a,b,c,d,e,...filters.values,...prefFields.values]){x.dispose();}super.dispose();}
   String get title=>switch(widget.kind){'discover'=>'Find matches','profile'=>'Your biodata','preferences'=>'Partner preferences','messages'=>'Messages','support'=>'Help & support',_=>'Membership plans'};
   Future<void> load() async {
     setState(() { loading=true; error=null; });
