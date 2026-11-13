@@ -23,12 +23,35 @@ class _UserPanelShellState extends State<UserPanelShell> {
   int _workspaceInitialTab = 0;
   void _navigateFromDashboard(int target){setState((){if(target>=10){_workspaceInitialTab=target-10;_index=6;}else{_index=target;}});}
   bool _policyLoading = true;
+  String? _policyError;
+  bool _subscriptionExpired = false;
+  bool _approvalRestricted = false;
   List<Map<String,dynamic>> _pendingPolicies = [];
   @override void initState(){super.initState();_checkPendingPolicies();}
   Future<void> _checkPendingPolicies() async {
-    try { final r=await widget.apiClient.get('/privacy-policy/pending-acceptance',authenticated:true);final d=r['data'];if(mounted)setState(()=>_pendingPolicies=d is List?d.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[]); }
-    catch (_) { /* Keep the main panel usable if policy lookup is temporarily unavailable. */ }
-    finally { if(mounted)setState(()=>_policyLoading=false); }
+    if(mounted)setState(()=>{_policyLoading=true,_policyError=null});
+    try {
+      final r=await widget.apiClient.get('/privacy-policy/pending-acceptance',authenticated:true);
+      if(r['success']==false)throw Exception(r['message']??'Unable to verify policy acceptance.');
+      final d=r['data'];
+      final pending=d is List?d.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():<Map<String,dynamic>>[];
+      if(mounted)setState(()=>_pendingPolicies=pending);
+      if(pending.isEmpty)await _loadAccountAccess();
+    } catch(e) {
+      if(mounted)setState(()=>_policyError=e.toString().replaceFirst('ApiException: ',''));
+    } finally { if(mounted)setState(()=>_policyLoading=false); }
+  }
+  Future<void> _loadAccountAccess() async {
+    final results=await Future.wait([
+      widget.apiClient.get('/subscription-plans/my-subscription',authenticated:true).then((v)=>v).catchError((_)=>null),
+      widget.apiClient.get('/user-profile',authenticated:true).then((v)=>v).catchError((_)=>null),
+    ]);
+    final subscription=results[0],profile=results[1];
+    if(!mounted)return;
+    setState((){
+      if(subscription is Map){final data=subscription['data'];_subscriptionExpired=data==null||(data is Map&&data['isExpired']==true);}
+      if(profile is Map){final data=profile['data'];final status=data is Map?data['approvalStatus']?.toString()??'Approved':'Approved';_approvalRestricted=status.toLowerCase()!='approved';}
+    });
   }
 
   @override
@@ -40,19 +63,24 @@ class _UserPanelShellState extends State<UserPanelShell> {
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.blocked),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.reports),
       UserInterestsScreen(apiClient: widget.apiClient, onOpenChat: ()=>_navigateFromDashboard(14)),
-      UserWorkspaceScreen(apiClient: widget.apiClient, initialTab: _workspaceInitialTab),
+      UserWorkspaceScreen(apiClient: widget.apiClient, initialTab: _workspaceInitialTab, subscriptionExpired: _subscriptionExpired, approvalRestricted: _approvalRestricted),
       UserAccountPrivacyScreen(apiClient: widget.apiClient, onSignOut: widget.onSignOut),
     ];
     return Scaffold(
       backgroundColor: AppPalette.background,
       body: Stack(children:[
-        IndexedStack(index: _index, children: pages),
-        if(_policyLoading)const Positioned.fill(child:ColoredBox(color:AppPalette.background,child:Center(child:CircularProgressIndicator(color:AppPalette.maroon)))),
-        if(!_policyLoading&&_pendingPolicies.isNotEmpty)Positioned.fill(child:_MandatoryPrivacyGate(api:widget.apiClient,policies:_pendingPolicies,onAccepted:()=>setState(()=>_pendingPolicies=[]))),
+        if(_policyError!=null)Positioned.fill(child:Scaffold(backgroundColor:AppPalette.background,body:Center(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[const Icon(Icons.shield_outlined,size:42,color:AppPalette.maroon),const SizedBox(height:12),const Text('Unable to verify required privacy policies.',textAlign:TextAlign.center,style:TextStyle(fontWeight:FontWeight.w700)),const SizedBox(height:8),Text(_policyError!,textAlign:TextAlign.center),const SizedBox(height:12),FilledButton(onPressed:_checkPendingPolicies,child:const Text('Retry'))]))))),
+        if(_policyError==null)IndexedStack(index: _index, children: pages),
+        if(_policyError==null&&_policyLoading)const Positioned.fill(child:ColoredBox(color:AppPalette.background,child:Center(child:CircularProgressIndicator(color:AppPalette.maroon)))),
+        if(_policyError==null&&!_policyLoading&&_pendingPolicies.isNotEmpty)Positioned.fill(child:_MandatoryPrivacyGate(api:widget.apiClient,policies:_pendingPolicies,onAccepted:(){setState(()=>_pendingPolicies=[]);_loadAccountAccess();})),
       ]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
+        onDestinationSelected: (value) {
+          final allowed = _subscriptionExpired ? const {0,6,7} : _approvalRestricted ? const {0,1,6} : const {0,1,2,3,4,5,6,7};
+          if(!allowed.contains(value)){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('This section is unavailable until your profile or subscription status is resolved.')));return;}
+          setState(() => _index = value);
+        },
         backgroundColor: AppPalette.surface,
         indicatorColor: AppPalette.champagne,
         destinations: const [
@@ -83,7 +111,7 @@ class _MandatoryPrivacyGateState extends State<_MandatoryPrivacyGate>{
   void checkBottom(){if(!controller.hasClients)return;final atEnd=controller.position.maxScrollExtent<=1||controller.position.pixels>=controller.position.maxScrollExtent-2;if(atEnd&&!bottom&&mounted)setState(()=>bottom=true);}
   Future<void> accept()async{
     if(!bottom||!confirmed||busy)return;setState(() { busy=true; error=null; });
-    try{await widget.api.post('/privacy-policy/accept-all',body:{},authenticated:true);final r=await widget.api.get('/privacy-policy/pending-acceptance',authenticated:true);final d=r['data'];if(d is List&&d.isNotEmpty)throw Exception('Some required policies are still pending. Please review and accept again.');widget.onAccepted();}
+    try{final accepted=await widget.api.post('/privacy-policy/accept-all',body:{},authenticated:true);if(accepted['success']!=true)throw Exception(accepted['message']??'Policy acceptance was not confirmed.');final r=await widget.api.get('/privacy-policy/pending-acceptance',authenticated:true);if(r['success']!=true)throw Exception(r['message']??'Unable to verify policy acceptance.');final d=r['data'];if(d is List&&d.isNotEmpty)throw Exception('Some required policies are still pending. Please review and accept again.');widget.onAccepted();}
     catch(e){if(mounted)setState(()=>error=e.toString());}
     finally{if(mounted)setState(()=>busy=false);}
   }
