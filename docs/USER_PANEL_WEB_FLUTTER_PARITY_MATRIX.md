@@ -62,16 +62,17 @@ Scope is the existing **User Panel only**. Admin and Mentor panels are excluded.
 
 ## Verification summary
 
-The latest observed successful CI run before the most recent implementation changes completed:
-- `flutter pub get`
-- `flutter analyze --no-fatal-infos`
-- `flutter test`
-- temporary Android runner generation
-- Android debug APK build
+Latest observed CI run on the current Flutter development branch:
+- `flutter pub get`: passed
+- `flutter analyze --no-fatal-infos`: passed
+- `flutter test`: passed
+- Temporary Android runner generation: passed
+- Java setup: passed
+- `flutter build apk --debug`: still running when this report was last checked
 
-The current branch has additional changes after that successful run; its latest CI run must complete before treating those changes as compile/build verified.
+The Android runner is generated temporarily by CI and is not committed in the repository. A permanent Android application ID and release signing configuration are not established in the inspected Flutter source. Therefore, this CI debug build does not verify a Play Store release bundle.
 
-No authenticated live API workflow, two-account SignalR test, physical Android-device test, or destructive account test has been performed. The repository does not track a permanent Android runner, and the exact production Android application ID is not established in source. CI generates a temporary runner for its debug build. Firebase configuration is absent.
+No authenticated live API workflow, two-account SignalR test, physical Android-device test, or destructive account test has been performed. No test-account credentials were provided, and no real purchases or destructive production operations were attempted. Firebase configuration is absent; the inspected Web User Panel does not implement a push-notification client.
 
 ## Counts and parity
 
