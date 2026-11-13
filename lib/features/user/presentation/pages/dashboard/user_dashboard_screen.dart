@@ -11,7 +11,7 @@ class UserDashboardScreen extends StatefulWidget {
 }
 class _UserDashboardScreenState extends State<UserDashboardScreen>{
  bool _loading=true; String? _error; Map<String,dynamic>? _profile;
- List<dynamic> _photos=[],_shortlist=[],_notifications=[],_stories=[]; int _referenceCount=0; Uint8List? _primaryPhotoBytes;
+ List<dynamic> _photos=[],_shortlist=[],_notifications=[],_stories=[]; int _referenceCount=0,_matchCount=0; Uint8List? _primaryPhotoBytes;
  @override void initState(){super.initState();_load();}
  Future<void> _load() async{
  setState((){_loading=true;_error=null;});
@@ -65,7 +65,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  const SizedBox(height:6),const Text('Your journey towards a meaningful bond begins here.',style:TextStyle(fontSize:13,color:AppPalette.secondary,fontFamily:'sans-serif')),
  const SizedBox(height:18),if(_error!=null)_errorCard(),
  if(_stories.isNotEmpty)_successStories(),const SizedBox(height:15),_hero(p),const SizedBox(height:15),_strength(percent,done),const SizedBox(height:15),
- Row(children:[Expanded(child:_stat('SHORTLISTED',_shortlist.length,Icons.favorite_border,()=>widget.onNavigate(2))),const SizedBox(width:9),Expanded(child:_stat('UNREAD UPDATES',unread,Icons.notifications_none,()=>widget.onNavigate(1))),const SizedBox(width:9),Expanded(child:_stat('PHOTOS',_photos.length,Icons.photo_camera_back_outlined,()=>widget.onNavigate(12)))]),
+ Row(children:[Expanded(child:_stat('MATCHES FOR YOU',_matchCount,Icons.explore_outlined,()=>widget.onNavigate(10))),const SizedBox(width:8),Expanded(child:_stat('SHORTLISTED',_shortlist.length,Icons.favorite_border,()=>widget.onNavigate(2))),const SizedBox(width:8),Expanded(child:_stat('UNREAD UPDATES',unread,Icons.notifications_none,()=>widget.onNavigate(1)))]),
  const SizedBox(height:14),_quickActions(),
  const SizedBox(height:23),_heading('Latest updates','Recent account activity'),const SizedBox(height:9),_notificationsCard(),
  const SizedBox(height:22),_heading('Your shortlist','Profiles saved for later'),const SizedBox(height:9),_shortlistCard(),
