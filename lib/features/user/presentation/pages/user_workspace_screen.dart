@@ -43,6 +43,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   bool loading=true,working=false; String? error,notice;
   List<Map<String,dynamic>> items=[]; Map<String,dynamic> data={};
   final a=TextEditingController(),b=TextEditingController(),c=TextEditingController(),d=TextEditingController(),e=TextEditingController();
+  final Map<String,TextEditingController> prefFields={for(final k in ['minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','religionId','casteId','subCasteId','motherTongue','educationFieldId','courseId','qualificationId','occupationId','professionId','workType','minYearlyIncome','maxYearlyIncome','countryId','stateId','cityId'])k:TextEditingController()};
   final Map<String,TextEditingController> filters={for(final k in ['subCasteId','preferredGender','maritalStatus','motherTongue','education','profession','minYearlyIncome','maxYearlyIncome','minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','countryId','stateId','cityId','educationFieldId','courseId','qualificationId','occupationId','professionId','workType'])k:TextEditingController()};
   int discoverPage=1,totalPages=1;
   String choice='Female',marital='Never Married';
@@ -67,7 +68,9 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         if(raw is Map){data=Map<String,dynamic>.from(raw);a.text=data['firstName']?.toString()??'';b.text=data['lastName']?.toString()??'';c.text=data['dateOfBirth']?.toString().split('T').first??'';d.text=data['gender']?.toString()??'';e.text=data['aboutMe']?.toString()??'';}
       } else if(widget.kind=='preferences'){
         final r=await widget.api.get('/partner-preferences',authenticated:true); final raw=r['data'];
-        if(raw is Map){data=Map<String,dynamic>.from(raw);choice=data['preferredGender']?.toString()??choice;marital=data['maritalStatus']?.toString()??marital;final age=data['age'];if(age is Map){a.text=age['minAge']?.toString()??'';b.text=age['maxAge']?.toString()??'';}c.text=data['additionalRequirements']?.toString()??'';}
+        if(raw is Map){data=Map<String,dynamic>.from(raw);choice=data['preferredGender']?.toString()??choice;marital=data['maritalStatus']?.toString()??marital;final age=data['age'];if(age is Map){a.text=age['minAge']?.toString()??'';b.text=age['maxAge']?.toString()??'';}
+          c.text=data['additionalRequirements']?.toString()??'';
+          for(final group in ['height','community','career','location']){final value=data[group];if(value is Map){for(final entry in value.entries){if(prefFields.containsKey(entry.key))prefFields[entry.key]!.text=entry.value?.toString()??'';}}}}
       } else if(widget.kind=='messages'){
         final r=await widget.api.get('/conversations',authenticated:true);final raw=r['data'];
         items=raw is List?raw.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():[];
@@ -173,17 +176,35 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
       button('Submit for review',()=>run(()async{await widget.api.post('/user-profile/submit-for-review',body:{},authenticated:true);setState(()=>notice='Profile submitted for review.');await load();})),
     ])),
   ];
+  Widget prefField(String label,String key)=>Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:prefFields[key],keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:InputDecoration(labelText:label,filled:true)));
   List<Widget> preferences()=>[
     panel(Column(children:[
       DropdownButtonFormField<String>(value:choice,decoration:const InputDecoration(labelText:'Preferred gender'),items:['Female','Male','Any'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(x)=>setState(()=>choice=x??choice)),
       const SizedBox(height:10),
       DropdownButtonFormField<String>(value:marital,decoration:const InputDecoration(labelText:'Marital status'),items:['Never Married','Divorced','Widowed','Any'].map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(x)=>setState(()=>marital=x??marital)),
       const SizedBox(height:10),field('Minimum age',a,keyboard:TextInputType.number),field('Maximum age',b,keyboard:TextInputType.number),field('Additional requirements',c,lines:3),
+      const Divider(),const Align(alignment:Alignment.centerLeft,child:Text('Height range',style:TextStyle(fontWeight:FontWeight.w700))),
+      prefField('Minimum height (feet)','minHeightFeet'),prefField('Minimum height (inches)','minHeightInches'),prefField('Maximum height (feet)','maxHeightFeet'),prefField('Maximum height (inches)','maxHeightInches'),
+      const Divider(),const Align(alignment:Alignment.centerLeft,child:Text('Community preferences',style:TextStyle(fontWeight:FontWeight.w700))),
+      prefField('Religion ID','religionId'),prefField('Caste ID','casteId'),prefField('Sub-caste ID','subCasteId'),prefField('Mother tongue','motherTongue'),
+      const Divider(),const Align(alignment:Alignment.centerLeft,child:Text('Education & career preferences',style:TextStyle(fontWeight:FontWeight.w700))),
+      prefField('Education field ID','educationFieldId'),prefField('Course ID','courseId'),prefField('Qualification ID','qualificationId'),prefField('Occupation ID','occupationId'),prefField('Profession ID','professionId'),prefField('Work type','workType'),prefField('Minimum yearly income','minYearlyIncome'),prefField('Maximum yearly income','maxYearlyIncome'),
+      const Divider(),const Align(alignment:Alignment.centerLeft,child:Text('Location preferences',style:TextStyle(fontWeight:FontWeight.w700))),
+      prefField('Country ID','countryId'),prefField('State ID','stateId'),prefField('City ID','cityId'),
       button('Save preferences',()=>run(()async{
         final lo=int.tryParse(a.text),hi=int.tryParse(b.text);
-        if(lo!=null&&hi!=null&&lo>hi)throw Exception('Minimum age cannot exceed maximum age.');
+        if(lo!=null&&hi!=null&&lo>hi)throw Exception('Minimum partner age cannot exceed maximum age.');
         if((lo!=null&&lo<18)||(hi!=null&&hi<18))throw Exception('Minimum partner age is 18.');
-        await widget.api.put('/partner-preferences',body:{'preferredGender':choice,'maritalStatus':marital,'additionalRequirements':c.text.trim().isEmpty?null:c.text.trim(),'rowVersion':data['rowVersion'],'age':{'minAge':lo,'maxAge':hi},'height':data['height'],'community':data['community'],'career':data['career'],'location':data['location']},authenticated:true);
+        final minIncome=num.tryParse(prefFields['minYearlyIncome']!.text),maxIncome=num.tryParse(prefFields['maxYearlyIncome']!.text);
+        if(minIncome!=null&&maxIncome!=null&&minIncome>maxIncome)throw Exception('Minimum income cannot exceed maximum income.');
+        await widget.api.put('/partner-preferences',body:{
+          'preferredGender':choice,'maritalStatus':marital,'additionalRequirements':c.text.trim().isEmpty?null:c.text.trim(),'rowVersion':data['rowVersion'],
+          'age':{'minAge':lo,'maxAge':hi},
+          'height':{'minFeet':int.tryParse(prefFields['minHeightFeet']!.text),'minInches':int.tryParse(prefFields['minHeightInches']!.text),'maxFeet':int.tryParse(prefFields['maxHeightFeet']!.text),'maxInches':int.tryParse(prefFields['maxHeightInches']!.text)},
+          'community':{'religionId':int.tryParse(prefFields['religionId']!.text),'casteId':int.tryParse(prefFields['casteId']!.text),'subCasteId':int.tryParse(prefFields['subCasteId']!.text),'motherTongue':prefFields['motherTongue']!.text.trim().isEmpty?null:prefFields['motherTongue']!.text.trim()},
+          'career':{'educationFieldId':int.tryParse(prefFields['educationFieldId']!.text),'courseId':int.tryParse(prefFields['courseId']!.text),'qualificationId':int.tryParse(prefFields['qualificationId']!.text),'occupationId':int.tryParse(prefFields['occupationId']!.text),'professionId':int.tryParse(prefFields['professionId']!.text),'workType':prefFields['workType']!.text.trim().isEmpty?null:prefFields['workType']!.text.trim(),'minYearlyIncome':minIncome,'maxYearlyIncome':maxIncome},
+          'location':{'countryId':int.tryParse(prefFields['countryId']!.text),'stateId':int.tryParse(prefFields['stateId']!.text),'cityId':int.tryParse(prefFields['cityId']!.text)},
+        },authenticated:true);
         setState(()=>notice='Partner preferences saved.');await load();
       })),
     ])),
