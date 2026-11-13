@@ -1,20 +1,21 @@
 import 'package:signalr_netcore/signalr_client.dart';
 import '../../../core/config/app_config.dart';
-import '../../../core/storage/session_store.dart';
+import '../../../core/api/api_client.dart';
 
 class ChatRealtimeService {
   HubConnection? _connection;
   String? _joinedConversationId;
+  final ApiClient api;
   final void Function(Map<String,dynamic>) onMessage;
   final void Function(String messageId,String conversationId) onMessageDeleted;
 
-  ChatRealtimeService({required this.onMessage,required this.onMessageDeleted});
+  ChatRealtimeService({required this.api,required this.onMessage,required this.onMessageDeleted});
 
   Future<void> connect() async {
     if(_connection?.state==HubConnectionState.Connected)return;
     final base=AppConfig.apiBaseUrl.trim().replaceFirst(RegExp(r'/api/?$'),'').replaceFirst(RegExp(r'/+$'),'');
     final url='$base/api/hubs/chat';
-    final options=HttpConnectionOptions(accessTokenFactory:() async=>SessionStore.instance.current?.accessToken??'');
+    final options=HttpConnectionOptions(accessTokenFactory:() async=>await api.getValidAccessToken()??'');
     final connection=HubConnectionBuilder()
       .withUrl(url,options:options)
       .withAutomaticReconnect(retryDelays:<int>[2000,5000,10000,20000])
