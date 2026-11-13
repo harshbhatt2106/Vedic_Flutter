@@ -9,10 +9,14 @@ class ProfileReviewDetailScreen extends StatefulWidget {
     super.key,
     required this.apiClient,
     required this.profile,
+    this.allowReviewActions = true,
+    this.title = 'Profile review',
   });
 
   final ApiClient apiClient;
   final AdminQueueProfile profile;
+  final bool allowReviewActions;
+  final String title;
 
   @override
   State<ProfileReviewDetailScreen> createState() => _ProfileReviewDetailScreenState();
@@ -233,7 +237,7 @@ class _ProfileReviewDetailScreenState extends State<ProfileReviewDetailScreen> {
         : [_value('firstName', ''), _value('lastName', '')].where((v) => v.isNotEmpty).join(' ');
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile review'),
+        title: Text(widget.title),
         backgroundColor: AppPalette.surface,
         foregroundColor: AppPalette.darkMaroon,
         actions: [IconButton(onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))],
@@ -254,7 +258,7 @@ class _ProfileReviewDetailScreenState extends State<ProfileReviewDetailScreen> {
                   ]),
                 ))
               : _buildBody(profileName),
-      bottomNavigationBar: !_loading && _error == null && _canDecide
+      bottomNavigationBar: widget.allowReviewActions && !_loading && _error == null && _canDecide
           ? SafeArea(
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
