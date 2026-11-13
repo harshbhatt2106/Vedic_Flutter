@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../../../app/theme/app_theme.dart';
 import '../../../../../core/api/api_client.dart';
@@ -10,17 +11,18 @@ class UserDashboardScreen extends StatefulWidget {
 }
 class _UserDashboardScreenState extends State<UserDashboardScreen>{
  bool _loading=true; String? _error; Map<String,dynamic>? _profile;
- List<dynamic> _photos=[],_shortlist=[],_notifications=[]; int _referenceCount=0;
+ List<dynamic> _photos=[],_shortlist=[],_notifications=[],_stories=[]; int _referenceCount=0; Uint8List? _primaryPhotoBytes;
  @override void initState(){super.initState();_load();}
  Future<void> _load() async{
  setState((){_loading=true;_error=null;});
  try{
  final r=await Future.wait([
- widget.apiClient.get('/user-profile',authenticated:true),
- widget.apiClient.get('/user-profile/photos',authenticated:true),
- widget.apiClient.get('/shortlists',authenticated:true),
- widget.apiClient.get('/notifications?take=4',authenticated:true),
- widget.apiClient.get('/user-references',authenticated:true),
+  widget.apiClient.get('/user-profile',authenticated:true),
+  widget.apiClient.get('/user-profile/photos',authenticated:true).catchError((_)=> <String,dynamic>{'data':<dynamic>[]}),
+  widget.apiClient.get('/shortlists',authenticated:true).catchError((_)=> <String,dynamic>{'data':<dynamic>[]}),
+  widget.apiClient.get('/notifications?take=4',authenticated:true).catchError((_)=> <String,dynamic>{'data':<dynamic>[]}),
+  widget.apiClient.get('/user-references',authenticated:true).catchError((_)=> <String,dynamic>{'data':<dynamic>[]}),
+  widget.apiClient.get('/public/success-stories').catchError((_)=> <String,dynamic>{'data':<dynamic>[]}),
  ]);
  if(!mounted)return;
  _profile=r[0]['data'] is Map<String,dynamic>?r[0]['data'] as Map<String,dynamic>:null;
@@ -28,6 +30,10 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  _shortlist=r[2]['data'] is List?r[2]['data'] as List:[];
  _notifications=r[3]['data'] is List?r[3]['data'] as List:[];
  _referenceCount=r[4]['data'] is List?(r[4]['data'] as List).length:0;
+ _stories=r[5]['data'] is List?r[5]['data'] as List:[];
+ final primary=_photos.whereType<Map>().cast<Map>().where((x)=>x['isPrimary']==true).firstOrNull??(_photos.isNotEmpty?_photos.first:null);
+ if(primary is Map&&primary['id']!=null){try{_primaryPhotoBytes=await widget.apiClient.getBytes('/user-profile/photos/${primary['id']}/content',authenticated:true);}catch(_){_primaryPhotoBytes=null;}}
+ _stories.sort((a,b)=>DateTime.tryParse(b is Map?(b['marriedOn']??'').toString():'')?.compareTo(DateTime.tryParse(a is Map?(a['marriedOn']??'').toString():'')??DateTime(1900))??0);
  }catch(e){if(mounted)_error=e.toString().replaceFirst('ApiException: ','');}
  finally{if(mounted)setState(()=>_loading=false);}
  }
@@ -58,7 +64,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  const SizedBox(height:7),Text('Namaste, ${_name.split(' ').first}',style:const TextStyle(fontSize:31,color:AppPalette.darkMaroon,height:1.08)),
  const SizedBox(height:6),const Text('Your journey towards a meaningful bond begins here.',style:TextStyle(fontSize:13,color:AppPalette.secondary,fontFamily:'sans-serif')),
  const SizedBox(height:18),if(_error!=null)_errorCard(),
- _hero(p),const SizedBox(height:15),_strength(percent,done),const SizedBox(height:15),
+ if(_stories.isNotEmpty)_successStories(),const SizedBox(height:15),_hero(p),const SizedBox(height:15),_strength(percent,done),const SizedBox(height:15),
  Row(children:[Expanded(child:_stat('SHORTLISTED',_shortlist.length,Icons.favorite_border,()=>widget.onNavigate(2))),const SizedBox(width:9),Expanded(child:_stat('UNREAD UPDATES',unread,Icons.notifications_none,()=>widget.onNavigate(1))),const SizedBox(width:9),Expanded(child:_stat('PHOTOS',_photos.length,Icons.photo_camera_back_outlined,()=>widget.onNavigate(12)))]),
  const SizedBox(height:14),_quickActions(),
  const SizedBox(height:23),_heading('Latest updates','Recent account activity'),const SizedBox(height:9),_notificationsCard(),
@@ -72,12 +78,22 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  final sub=[if(age!=null&&age>0)'$age yrs',p?['profession']?.toString(),p?['cityName']?.toString()].where((x)=>x!=null&&x.isNotEmpty).join(' · ');
  final label=p==null||!complete?'BIODATA INCOMPLETE':status=='Approved'?'PROFILE LIVE':status=='Rejected'?'CHANGES REQUESTED':'UNDER REVIEW';
  return Container(padding:const EdgeInsets.all(20),decoration:BoxDecoration(borderRadius:BorderRadius.circular(22),gradient:const LinearGradient(colors:[AppPalette.darkMaroon,AppPalette.maroon],begin:Alignment.topLeft,end:Alignment.bottomRight),boxShadow:[BoxShadow(color:AppPalette.darkMaroon.withValues(alpha:.15),blurRadius:20,offset:const Offset(0,9))]),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
- Row(children:[Container(width:56,height:56,decoration:BoxDecoration(shape:BoxShape.circle,color:AppPalette.champagne.withValues(alpha:.18),border:Border.all(color:AppPalette.gold)),child:Center(child:Text(_name[0].toUpperCase(),style:const TextStyle(color:AppPalette.champagne,fontSize:24)))),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(_name,style:const TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.w600)),if(sub.isNotEmpty)Text(sub,style:const TextStyle(color:AppPalette.champagne,fontSize:11,fontFamily:'sans-serif'))]))]),
+ Row(children:[Container(width:56,height:56,clipBehavior:Clip.antiAlias,decoration:BoxDecoration(shape:BoxShape.circle,color:AppPalette.champagne.withValues(alpha:.18),border:Border.all(color:AppPalette.gold)),child:_primaryPhotoBytes!=null?Image.memory(_primaryPhotoBytes!,fit:BoxFit.cover):Center(child:Text(_name[0].toUpperCase(),style:const TextStyle(color:AppPalette.champagne,fontSize:24)))),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(_name,style:const TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.w600)),if(sub.isNotEmpty)Text(sub,style:const TextStyle(color:AppPalette.champagne,fontSize:11,fontFamily:'sans-serif'))]))]),
  const SizedBox(height:15),Container(padding:const EdgeInsets.symmetric(horizontal:11,vertical:7),decoration:BoxDecoration(color:Colors.white.withValues(alpha:.13),borderRadius:BorderRadius.circular(24)),child:Text(label,style:const TextStyle(color:AppPalette.champagne,fontSize:10,fontWeight:FontWeight.w700,letterSpacing:1,fontFamily:'sans-serif'))),
  if(status=='Rejected'&&(p?['rejectionReason']?.toString().isNotEmpty??false))Padding(padding:const EdgeInsets.only(top:10),child:Text('Reason: ${p?['rejectionReason']}',style:const TextStyle(color:Colors.white70,fontSize:12))),
  const SizedBox(height:14),const Text('A thoughtful introduction is the beginning of every lasting relationship.',style:TextStyle(color:Colors.white70,fontSize:12,height:1.5,fontFamily:'sans-serif')),
  ]));
  }
+ Widget _successStories()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+  const Text('VEDICVIVAH CELEBRATIONS',style:TextStyle(color:AppPalette.gold,fontSize:10,fontWeight:FontWeight.w700,letterSpacing:1.5)),
+  const SizedBox(height:8),
+  ..._stories.take(3).map((raw){final story=raw is Map?raw:<String,dynamic>{};final date=DateTime.tryParse(story['marriedOn']?.toString()??'');return _panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+    Text('Congratulations to ${story['husbandName']??'Our members'} & ${story['wifeName']??''}!',style:const TextStyle(color:AppPalette.darkMaroon,fontWeight:FontWeight.w700,fontSize:15)),
+    if((story['message']??'').toString().isNotEmpty)Text(story['message'].toString(),style:const TextStyle(color:AppPalette.secondary,fontSize:12)),
+    if(date!=null)Text('${date.month.toString().padLeft(2,'0')}/${date.year}',style:const TextStyle(color:AppPalette.gold,fontSize:11)),
+  ]));}),
+  const SizedBox(height:8),
+ ]);
  Widget _strength(int percent,int done)=>_panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
  Row(children:[const Expanded(child:Text('BIODATA STRENGTH',style:TextStyle(color:AppPalette.gold,fontSize:11,fontWeight:FontWeight.w700,letterSpacing:1.4,fontFamily:'sans-serif'))),Text('$percent%',style:const TextStyle(color:AppPalette.maroon,fontSize:22,fontWeight:FontWeight.w700))]),
  const SizedBox(height:10),ClipRRect(borderRadius:BorderRadius.circular(20),child:LinearProgressIndicator(value:percent/100,minHeight:8,backgroundColor:AppPalette.champagne,color:AppPalette.maroon)),
@@ -92,8 +108,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
   OutlinedButton.icon(onPressed:()=>widget.onNavigate(14),icon:const Icon(Icons.chat_bubble_outline),label:const Text('Messages')),
  ]));
  Widget _heading(String title,String sub)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(color:AppPalette.darkMaroon,fontSize:21,fontWeight:FontWeight.w600)),Text(sub,style:const TextStyle(color:AppPalette.secondary,fontSize:12,fontFamily:'sans-serif'))]);
- Widget _notificationsCard(){if(_notifications.isEmpty)return _empty('You are all caught up. New updates will appear here.');return _panel(Column(children:_notifications.take(4).map((raw){final x=raw as Map<String,dynamic>;return ListTile(dense:true,leading:Icon(x['isRead']==true?Icons.notifications_none:Icons.notifications_active_outlined,color:AppPalette.gold),title:Text(x['title']?.toString()??'Update',style:const TextStyle(fontSize:13,color:AppPalette.ink,fontWeight:FontWeight.w600)),subtitle:Text(x['message']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:11,color:AppPalette.secondary)),trailing:Text(_ago(x['createdAtUtc']),style:const TextStyle(fontSize:10,color:AppPalette.secondary)));}).toList()));}
- Widget _shortlistCard(){if(_shortlist.isEmpty)return _empty('Save profiles with the heart icon and they will appear here.');return _panel(Column(children:_shortlist.take(4).map((raw){final x=raw as Map<String,dynamic>;final name='${x['firstName']??''} ${x['lastName']??''}'.trim();final detail=[x['profession'],x['cityName']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' · ');return ListTile(dense:true,leading:CircleAvatar(backgroundColor:AppPalette.champagne,foregroundColor:AppPalette.darkMaroon,child:Text(name.isEmpty?'V':name[0].toUpperCase())),title:Text(name.isEmpty?'VedicVivah member':name,style:const TextStyle(fontSize:13,color:AppPalette.ink,fontWeight:FontWeight.w600)),subtitle:Text(detail,style:const TextStyle(fontSize:11,color:AppPalette.secondary)),trailing:const Icon(Icons.favorite,color:AppPalette.maroon,size:17));}).toList()));}
+ Widget _notificationsCard(){if(_notifications.isEmpty)return _empty('You are all caught up. New updates will appear here.');return _panel(Column(children:_notifications.take(4).map((raw){final x=raw as Map<String,dynamic>;return ListTile(dense:true,onTap:()=>widget.onNavigate(1),leading:Icon(x['isRead']==true?Icons.notifications_none:Icons.notifications_active_outlined,color:AppPalette.gold),title:Text(x['title']?.toString()??'Update',style:const TextStyle(fontSize:13,color:AppPalette.ink,fontWeight:FontWeight.w600)),subtitle:Text(x['message']?.toString()??'',maxLines:2,overflow:TextOverflow.ellipsis,style:const TextStyle(fontSize:11,color:AppPalette.secondary)),trailing:Text(_ago(x['createdAtUtc']),style:const TextStyle(fontSize:10,color:AppPalette.secondary)));}).toList()));}
+ Widget _shortlistCard(){if(_shortlist.isEmpty)return _empty('Save profiles with the heart icon and they will appear here.');return _panel(Column(children:_shortlist.take(4).map((raw){final x=raw as Map<String,dynamic>;final name='${x['firstName']??''} ${x['lastName']??''}'.trim();final detail=[x['profession'],x['cityName']].where((v)=>v!=null&&v.toString().isNotEmpty).join(' · ');return ListTile(dense:true,onTap:()=>widget.onNavigate(2),leading:CircleAvatar(backgroundColor:AppPalette.champagne,foregroundColor:AppPalette.darkMaroon,child:Text(name.isEmpty?'V':name[0].toUpperCase())),title:Text(name.isEmpty?'VedicVivah member':name,style:const TextStyle(fontSize:13,color:AppPalette.ink,fontWeight:FontWeight.w600)),subtitle:Text(detail,style:const TextStyle(fontSize:11,color:AppPalette.secondary)),trailing:const Icon(Icons.favorite,color:AppPalette.maroon,size:17));}).toList()));}
  Widget _empty(String message)=>_panel(Row(children:[const Icon(Icons.auto_awesome_outlined,color:AppPalette.gold),const SizedBox(width:10),Expanded(child:Text(message,style:const TextStyle(color:AppPalette.secondary,fontSize:12,height:1.4,fontFamily:'sans-serif')))]));
  Widget _panel(Widget child,{EdgeInsets padding=const EdgeInsets.all(16)})=>Container(padding:padding,decoration:BoxDecoration(color:AppPalette.surface,borderRadius:BorderRadius.circular(17),border:Border.all(color:AppPalette.border)),child:child);
  Widget _errorCard()=>Container(margin:const EdgeInsets.only(bottom:12),padding:const EdgeInsets.all(13),decoration:BoxDecoration(color:AppPalette.error.withValues(alpha:.07),borderRadius:BorderRadius.circular(13),border:Border.all(color:AppPalette.error.withValues(alpha:.25))),child:Row(children:[const Icon(Icons.error_outline,color:AppPalette.error),const SizedBox(width:8),Expanded(child:Text(_error!,style:const TextStyle(color:AppPalette.error,fontSize:12))),TextButton(onPressed:_load,child:const Text('Retry'))]));
