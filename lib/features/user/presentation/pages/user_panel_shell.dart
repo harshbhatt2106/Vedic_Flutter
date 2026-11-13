@@ -31,7 +31,7 @@ class _UserPanelShellState extends State<UserPanelShell> {
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.reports),
       UserInterestsScreen(apiClient: widget.apiClient),
       UserWorkspaceScreen(apiClient: widget.apiClient),
-      UserAccountPrivacyScreen(apiClient: widget.apiClient),
+      UserAccountPrivacyScreen(apiClient: widget.apiClient, onSignOut: widget.onSignOut),
     ];
     return Scaffold(
       backgroundColor: AppPalette.background,
