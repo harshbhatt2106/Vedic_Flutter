@@ -49,7 +49,7 @@ class _UserReferencesScreenState extends State<UserReferencesScreen>{
     }catch(e){if(mounted)setState(()=>error=e.toString());}
     finally{if(mounted)setState(()=>busy=false);}
   }
-  void clearForm(){setState(()=>{editingId=null,selectedCountryId=null,selectedStateId=null,selectedCityId=null,states=[],cities=[]});name.clear();phone.clear();city.clear();relation.clear();}
+  void clearForm(){setState(() { editingId=null;selectedCountryId=null;selectedStateId=null;selectedCityId=null;states=[];cities=[]; });name.clear();phone.clear();city.clear();relation.clear();}
   Future<void> remove(String id)async{final yes=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Delete reference?'),content:const Text('This reference contact will be removed.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete'))]));if(yes!=true)return;try{await widget.apiClient.delete('/user-references/$id',authenticated:true);await load();}catch(e){setState(()=>error=e.toString());}}
   Widget field(String label,TextEditingController c,{TextInputType? keyboard})=>Padding(padding:const EdgeInsets.only(bottom:8),child:TextField(controller:c,keyboardType:keyboard,decoration:InputDecoration(labelText:label,filled:true)));
   @override Widget build(BuildContext context){if(loading)return const Center(child:CircularProgressIndicator());return RefreshIndicator(onRefresh:load,child:ListView(padding:const EdgeInsets.all(14),children:[
