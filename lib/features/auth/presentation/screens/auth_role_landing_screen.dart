@@ -20,7 +20,7 @@ class AuthRoleLandingScreen extends StatelessWidget {
   final AuthSession session;
 
   Future<void> _signOut(BuildContext context) async {
-    await repository.logout();
+    try { await repository.logout(); } catch (_) { /* Account may already be deactivated or deleted. */ }
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => LoginScreen(repository: repository, apiClient: apiClient)),
