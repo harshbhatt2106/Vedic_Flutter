@@ -1,0 +1,1 @@
+Admin-only review panels, tables, management forms and moderation dialogs.
