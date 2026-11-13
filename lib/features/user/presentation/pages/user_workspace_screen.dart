@@ -67,7 +67,7 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   final a=TextEditingController(),b=TextEditingController(),c=TextEditingController(),d=TextEditingController(),e=TextEditingController();
   final Map<String,List<Map<String,dynamic>>> prefOptions={};
   final Map<String,TextEditingController> prefFields={for(final k in ['minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','religionId','casteId','subCasteId','motherTongue','educationFieldId','courseId','qualificationId','occupationId','professionId','workType','minYearlyIncome','maxYearlyIncome','countryId','stateId','cityId'])k:TextEditingController()};
-  bool _discoveryOptionsLoaded=false;
+  bool _discoveryOptionsLoaded=false,_discoverPreferencesLoaded=false;
   final Map<String,List<Map<String,dynamic>>> discoveryOptions={};
   final Set<String> shortlistedIds={};
   final Map<String,String> interestStatuses={};
