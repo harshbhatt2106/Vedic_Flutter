@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
@@ -68,6 +69,9 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
   final Map<String,TextEditingController> prefFields={for(final k in ['minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','religionId','casteId','subCasteId','motherTongue','educationFieldId','courseId','qualificationId','occupationId','professionId','workType','minYearlyIncome','maxYearlyIncome','countryId','stateId','cityId'])k:TextEditingController()};
   bool _discoveryOptionsLoaded=false;
   final Map<String,List<Map<String,dynamic>>> discoveryOptions={};
+  final Set<String> shortlistedIds={};
+  final Map<String,String> interestStatuses={};
+  final Map<String,Uint8List> discoveryAvatars={};
   final Map<String,TextEditingController> filters={for(final k in ['religionId','casteId','subCasteId','preferredGender','maritalStatus','motherTongue','education','profession','minYearlyIncome','maxYearlyIncome','minHeightFeet','minHeightInches','maxHeightFeet','maxHeightInches','countryId','stateId','cityId','educationFieldId','courseId','qualificationId','occupationId','professionId','workType'])k:TextEditingController()};
   int discoverPage=1,totalPages=1;
   String choice='',marital='';
@@ -87,7 +91,15 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         final next=list is List?list.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList():<Map<String,dynamic>>[];
         items=discoverPage>1?[...items,...next]:next;
         totalPages=(raw is Map?(raw['totalPages'] as num?)?.toInt():null)??1;
-        if(!_discoveryOptionsLoaded){await _loadDiscoveryOptions();_discoveryOptionsLoaded=true;}
+        if(!_discoveryOptionsLoaded){
+          await _loadDiscoveryOptions();_discoveryOptionsLoaded=true;
+          try{final shortlist=await widget.api.get('/shortlists',authenticated:true);final values=shortlist['data'];if(values is List){shortlistedIds.addAll(values.whereType<Map>().map((x)=>(x['shortlistedUserId']??'').toString()).where((x)=>x.isNotEmpty));}}catch(_){}
+        }
+        await Future.wait(next.map((profile)async{
+          final userId=(profile['userId']??profile['id']??'').toString();if(userId.isEmpty)return;
+          try{final status=await widget.api.get('/interests/status/$userId',authenticated:true);if(status['data']!=null)interestStatuses[userId]=status['data'].toString();}catch(_){}
+          try{discoveryAvatars[userId]=await widget.api.getBytes('/user-profile/$userId/primary-photo',authenticated:true);}catch(_){}
+        }));
       } else if(widget.kind=='profile'){
         final r=await widget.api.get('/user-profile',authenticated:true); final raw=r['data'];
         if(raw is Map){data=Map<String,dynamic>.from(raw);a.text=data['firstName']?.toString()??'';b.text=data['lastName']?.toString()??'';c.text=data['dateOfBirth']?.toString().split('T').first??'';d.text=data['gender']?.toString()??'';e.text=data['aboutMe']?.toString()??'';}
@@ -201,20 +213,26 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     ])),
     if(items.isEmpty)panel(const Text('No profiles found. Complete your profile and try again.')),
     if(discoverPage<totalPages)button('Load more profiles',(){ discoverPage++; load(); }),
-    ...items.map((p){final id=(p['userId']??p['id']??'').toString();final name=(''+(p['firstName']??'').toString()+' '+(p['lastName']??'').toString()).trim();
-      final details=[p['profession'],p['education'],p['cityName'],p['religionName'],p['casteName']].where((x)=>x!=null&&x.toString().isNotEmpty).join(' · ');
-      return Padding(padding:const EdgeInsets.only(bottom:9),child:panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-        Text(name.isEmpty?'VedicVivah member':name,style:const TextStyle(fontWeight:FontWeight.w700,color:AppPalette.darkMaroon,fontSize:16)),
-        if(details.isNotEmpty)Text(details,style:const TextStyle(color:AppPalette.secondary,fontSize:12)),
-        if((p['aboutMe']??'').toString().isNotEmpty)Text(p['aboutMe'].toString(),maxLines:2,overflow:TextOverflow.ellipsis),
-        TextButton.icon(onPressed:working||id.isEmpty?null:()=>_viewProfile(id),icon:const Icon(Icons.person_search),label:const Text('View full profile')), 
-        Row(children:[Expanded(child:TextButton(onPressed:working||id.isEmpty?null:()=>run(()async{await widget.api.post('/shortlists/'+id,body:{},authenticated:true);setState(()=>notice='Profile added to shortlist.');}),child:const Text('Shortlist'))),Expanded(child:FilledButton(onPressed:working||id.isEmpty?null:()=>run(()async{await widget.api.post('/interests/'+id,body:{},authenticated:true);setState(()=>notice='Interest sent.');}),child:const Text('Send interest')))]),
-        Wrap(spacing:8,children:[
-          TextButton(onPressed:working||id.isEmpty?null:()=>_report(id),child:const Text('Report')),
-          TextButton(onPressed:working||id.isEmpty?null:()=>_block(id),child:const Text('Block')),
-        ]),
-      ])));
-    }),
+    ...items.map((p){
+       final id=(p['userId']??p['id']??'').toString();
+       final name=(''+(p['firstName']??'').toString()+' '+(p['lastName']??'').toString()).trim();
+       final details=[p['profession'],p['education'],p['cityName'],p['religionName'],p['casteName']].where((x)=>x!=null&&x.toString().isNotEmpty).join(' · ');
+       final status=interestStatuses[id]??'';final avatar=discoveryAvatars[id];
+       return Padding(padding:const EdgeInsets.only(bottom:9),child:panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+         Row(children:[CircleAvatar(radius:25,backgroundColor:AppPalette.champagne,backgroundImage:avatar==null?null:MemoryImage(avatar),child:avatar==null?const Icon(Icons.person,color:AppPalette.maroon):null),const SizedBox(width:10),Expanded(child:Text(name.isEmpty?'VedicVivah member':name,style:const TextStyle(fontWeight:FontWeight.w700,color:AppPalette.darkMaroon,fontSize:16)))]),
+         if(details.isNotEmpty)Text(details,style:const TextStyle(color:AppPalette.secondary,fontSize:12)),
+         if((p['aboutMe']??'').toString().isNotEmpty)Text(p['aboutMe'].toString(),maxLines:2,overflow:TextOverflow.ellipsis),
+         TextButton.icon(onPressed:working||id.isEmpty?null:()=>_viewProfile(id),icon:const Icon(Icons.person_search),label:const Text('View full profile')),
+         Row(children:[
+           Expanded(child:TextButton(onPressed:working||id.isEmpty?null:()=>_toggleShortlist(id),child:Text(shortlistedIds.contains(id)?'Remove shortlist':'Shortlist'))),
+           Expanded(child:FilledButton(onPressed:working||id.isEmpty||status=='Pending'||status=='Accepted'?null:()=>_sendInterest(id,name),child:Text(status=='Accepted'?'Connected':status=='Pending'?'Interest sent':'Send interest'))),
+         ]),
+         Wrap(spacing:8,children:[
+           TextButton(onPressed:working||id.isEmpty?null:()=>_report(id),child:const Text('Report')),
+           TextButton(onPressed:working||id.isEmpty?null:()=>_block(id),child:const Text('Block')),
+         ]),
+       ])));
+     }),
   ];
   Future<void> _viewProfile(String userId) async {
     try{
@@ -253,6 +271,17 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
       ])))));
     }catch(e){if(mounted)setState(()=>error=e.toString().replaceFirst('ApiException: ',''));}
     finally{if(mounted)setState(()=>working=false);}
+  }
+  Future<void> _toggleShortlist(String userId)async{
+    await run(()async{
+      if(shortlistedIds.contains(userId)){await widget.api.delete('/shortlists/$userId',authenticated:true);shortlistedIds.remove(userId);setState(()=>notice='Profile removed from shortlist.');}
+      else{await widget.api.post('/shortlists/$userId',body:{},authenticated:true);shortlistedIds.add(userId);setState(()=>notice='Profile added to shortlist.');}
+    });
+  }
+  Future<void> _sendInterest(String userId,String displayName)async{
+    final confirmed=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Send interest?'),content:Text('Send an interest to $displayName?'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Send interest'))]));
+    if(confirmed!=true)return;
+    await run(()async{await widget.api.post('/interests/$userId',body:{},authenticated:true);interestStatuses[userId]='Pending';setState(()=>notice='Interest sent successfully.');});
   }
   Future<void> _report(String userId) async {
     final reason=TextEditingController();
