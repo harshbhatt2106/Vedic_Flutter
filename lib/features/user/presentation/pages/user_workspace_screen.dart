@@ -174,7 +174,6 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
     ...items.map((c)=>panel(ListTile(onTap:()=>openConversation(c),leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(c['otherUserName']?.toString()??'Member'),subtitle:Text(c['lastMessage']?.toString()??''),trailing:Text((c['unreadCount']??0).toString())))),
   ];
   Future<void> openConversation(Map<String,dynamic> c)async{
-    final id=c['id'].toString();
     await showModalBottomSheet(context:context,isScrollControlled:true,builder:(ctx)=>_ConversationSheet(api:widget.api,conversation:c));
   }
   List<Widget> support()=>[
