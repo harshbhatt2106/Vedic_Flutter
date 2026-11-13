@@ -586,3 +586,46 @@ The following implementation batch is committed to `flutter-development`. This d
 - Flutter CI workflow is configured to run `flutter pub get`, `flutter analyze`, and `flutter test` on pushes to this branch. This audit does not claim those checks passed until a corresponding successful workflow run is observed.
 - No live authenticated API test or physical-device test has been performed in this batch.
 - Do not report 100% parity. Continue the route-by-route control/DTO audit and close the outstanding items above before final sign-off.
+
+
+## 18. Expanded User Panel implementation checkpoint — 2026-11-13
+
+The following User-facing implementation is now present on `flutter-development`:
+
+### User features implemented or substantially wired
+
+- Dashboard quick actions and tappable shortlist, notification and photo counters.
+- Find Matches: API-backed discovery, age/search and extended filters, pagination, full profile detail view, shortlist, send-interest, report and block actions.
+- Profile/Biodata: personal, physical, community, education/career, family, location/residence and About Me sections; live reference-data dropdowns and cascading religion/caste, education/course, occupation/profession and country/state/city selections; visibility and submit-for-review.
+- Photos: gallery read, protected image content, upload (JPG/PNG/WEBP, 5 MB limit, maximum six photos), set primary and delete. Account profile-picture replacement is also wired.
+- Partner Preferences: read/save all nested age, height, community, career and location preferences; live cascading reference-data selectors; client validation for age and income ranges.
+- Interests: received/sent actions, resubmit/withdraw, and start a conversation after acceptance.
+- Messaging: inbox and conversation search, accepted-connection search, REST send/read, SignalR authenticated connection, reconnect/rejoin, real-time receive/delete events, own-message deletion, conversation deletion and older-message paging.
+- Notifications: list, individual mark-as-read on tap and mark-all-as-read.
+- Shortlist: remove and view full profile.
+- Blocked profiles: unblock.
+- My Reports: list.
+- Account: name, username availability/update (including persisted session username), email OTP request/resend/verify, password update with confirmation, profile-picture replacement, deactivation and deletion.
+- Support: create and list tickets.
+- Plans: active plans and current subscription display. No checkout action is added because the inspected backend exposes no payment/checkout endpoint.
+- Privacy: pending policy acceptance is enforced as a post-login gate; the user must scroll to the end and confirm before continuing.
+- User references: list/create/edit/delete.
+- Mentor selection: available, suggested and currently assigned mentor.
+
+### API/client and CI changes
+
+- API client supports authenticated JSON PATCH and multipart POST/PUT with the correct image MIME types.
+- Added `image_picker` and `signalr_netcore`.
+- CI now runs `flutter pub get`, `flutter analyze --no-fatal-infos`, `flutter test`, creates the missing Android runner for the job, then attempts a debug APK build.
+
+### Verification and remaining blockers
+
+- On commit `d91e3b859996e2ea310f2ddbdf086f1726283eb5`, `flutter analyze --no-fatal-infos` passed and all 21 existing Flutter tests passed.
+- The first Android build attempt failed because the repository does not track an Android platform runner. CI was changed to generate one before building. The next build attempt failed with a Gradle error that only printed `25.0.5`; a verbose build run is being used to identify the cause.
+- The generated Android runner currently exists only inside CI, not as committed project files. The exact Play Console Android application ID must be confirmed before committing a permanent Android runner; do not guess it.
+- Firebase configuration is absent from the repository. Native push-token registration/delivery cannot be completed safely without the project's Firebase Android configuration (`google-services.json`) and matching Firebase project setup.
+- Reference-contact city selection still accepts a City ID rather than using the full cascading country/state/city selector.
+- Discover filter ID fields are wired to the backend query but are not all rendered as cascading dropdowns yet.
+- No live authenticated API end-to-end run or physical Android-device test has been performed.
+- Payment initiation remains not applicable to the current backend contract; do not invent a payment flow.
+- **Do not claim 100% parity yet.** Finish the Android build diagnosis, obtain the Android application ID/Firebase config, complete the remaining selector/UI parity, and run authenticated device testing before sign-off.
