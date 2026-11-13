@@ -19,7 +19,7 @@ class AuthRoleLandingScreen extends StatelessWidget {
  const SizedBox(height:10),Text('You are securely signed in as ${session.role}.',textAlign:TextAlign.center),
  const SizedBox(height:28),Text(destination,style:Theme.of(context).textTheme.titleLarge),
  const SizedBox(height:10),const Text('This role dashboard is the next implementation stage.',textAlign:TextAlign.center),
- const SizedBox(height:28),OutlinedButton(onPressed:() async{await repository.logout();if(!context.mounted)return;Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder:(_)=>LoginScreen(repository:repository)),(_)=>false);},child:const Text('Sign out')),
+ const SizedBox(height:28),OutlinedButton(onPressed:() async{await repository.logout();if(!context.mounted)return;Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder:(_)=>LoginScreen(repository:repository,apiClient:apiClient)),(_)=>false);},child:const Text('Sign out')),
  ])))));
  }
 }

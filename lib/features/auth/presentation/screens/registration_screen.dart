@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_client.dart';
 import 'package:flutter/services.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/errors/api_exception.dart';
@@ -11,8 +12,9 @@ import '../widgets/auth_text_field.dart';
 import 'login_screen.dart';
 
 class RegistrationScreen extends StatefulWidget {
-  const RegistrationScreen({super.key, required this.repository});
+  const RegistrationScreen({super.key, required this.repository, required this.apiClient});
   final AuthRepository repository;
+  final ApiClient apiClient;
   @override
   State<RegistrationScreen> createState() => _RegistrationScreenState();
 }
@@ -80,7 +82,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       setState(() { _verified = true; _info = 'Your email has been verified and your account is active.'; });
       await Future<void>.delayed(const Duration(milliseconds: 900));
       if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => LoginScreen(repository: widget.repository)), (_) => false);
+      Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => LoginScreen(repository: widget.repository, apiClient: widget.apiClient)), (_) => false);
     } catch (error) {
       if (!mounted) return;
       setState(() => _error = error is ApiException ? error.message : error.toString().replaceFirst('FormatException: ', ''));

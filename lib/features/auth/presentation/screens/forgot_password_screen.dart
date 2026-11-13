@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/errors/api_exception.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -12,8 +13,9 @@ import 'login_screen.dart';
 enum _RecoveryStep { email, otp, password, success }
 
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key, required this.repository});
+  const ForgotPasswordScreen({super.key, required this.repository, required this.apiClient});
   final AuthRepository repository;
+  final ApiClient apiClient;
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
@@ -146,7 +148,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             const Icon(Icons.check_circle_outline, color: Color(0xFF356B4A), size: 42),
             const SizedBox(height: 18),
             _action('RETURN TO SIGN IN', () async {
-              Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => LoginScreen(repository: widget.repository)), (_) => false);
+              Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => LoginScreen(repository: widget.repository, apiClient: widget.apiClient)), (_) => false);
             }),
           ],
         ]),

@@ -46,7 +46,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  int _age(dynamic raw){final d=DateTime.tryParse(raw?.toString()??'');if(d==null)return 0;final now=DateTime.now();var a=now.year-d.year;if(now.month<d.month||(now.month==d.month&&now.day<d.day))a--;return a;}
  String get _name{final n='${_profile?['firstName']??''} ${_profile?['lastName']??''}'.trim();return n.isEmpty?widget.session.userName:n;}
  String get _greeting{final h=DateTime.now().hour;return h<12?'GOOD MORNING':h<17?'GOOD AFTERNOON':'GOOD EVENING';}
- String _ago(dynamic raw){final d=DateTime.tryParse(raw?.toString()??'');if(d==null)return '';final m=DateTime.now().difference(d.toLocal()).inMinutes;if(m<1)return 'Just now';if(m<60)return '${m}m ago';final h=(m/60).round();if(h<24)return '${h}h ago';return '${(h/24).round()}d ago';}
+ String _ago(dynamic raw){final d=DateTime.tryParse(raw?.toString()??'');if(d==null)return '';final m=DateTime.now().difference(d.toLocal()).inMinutes;if(m<1)return 'Just now';if(m<60)return '$m m ago';final h=(m/60).round();if(h<24)return '$h h ago';return '${(h/24).round()}d ago';}
  @override Widget build(BuildContext context){
  final p=_profile;final done=_done;final percent=done*10;final unread=_notifications.where((x)=>x is Map&&x['isRead']!=true).length;
  return Scaffold(backgroundColor:AppPalette.background,appBar:AppBar(backgroundColor:AppPalette.background,elevation:0,title:const Text('VEDICVIVAH',style:TextStyle(color:AppPalette.darkMaroon,letterSpacing:2,fontSize:15,fontWeight:FontWeight.w700)),actions:[
@@ -68,7 +68,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen>{
  Widget _hero(Map<String,dynamic>? p){
  final complete=p?['isProfileComplete']==true;final status=p?['approvalStatus']?.toString()??'Pending';
  final age=p?['dateOfBirth']==null?null:_age(p?['dateOfBirth']);
- final sub=[if(age!=null&&age>0)'${age} yrs',p?['profession']?.toString(),p?['cityName']?.toString()].where((x)=>x!=null&&x.isNotEmpty).join(' · ');
+ final sub=[if(age!=null&&age>0)'$age yrs',p?['profession']?.toString(),p?['cityName']?.toString()].where((x)=>x!=null&&x.isNotEmpty).join(' · ');
  final label=p==null||!complete?'BIODATA INCOMPLETE':status=='Approved'?'PROFILE LIVE':status=='Rejected'?'CHANGES REQUESTED':'UNDER REVIEW';
  return Container(padding:const EdgeInsets.all(20),decoration:BoxDecoration(borderRadius:BorderRadius.circular(22),gradient:const LinearGradient(colors:[AppPalette.darkMaroon,AppPalette.maroon],begin:Alignment.topLeft,end:Alignment.bottomRight),boxShadow:[BoxShadow(color:AppPalette.darkMaroon.withValues(alpha:.15),blurRadius:20,offset:const Offset(0,9))]),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
  Row(children:[Container(width:56,height:56,decoration:BoxDecoration(shape:BoxShape.circle,color:AppPalette.champagne.withValues(alpha:.18),border:Border.all(color:AppPalette.gold)),child:Center(child:Text(_name[0].toUpperCase(),style:const TextStyle(color:AppPalette.champagne,fontSize:24)))),const SizedBox(width:12),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(_name,style:const TextStyle(color:Colors.white,fontSize:20,fontWeight:FontWeight.w600)),if(sub.isNotEmpty)Text(sub,style:const TextStyle(color:AppPalette.champagne,fontSize:11,fontFamily:'sans-serif'))]))]),
