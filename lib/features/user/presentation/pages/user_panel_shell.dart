@@ -20,6 +20,8 @@ class UserPanelShell extends StatefulWidget {
 
 class _UserPanelShellState extends State<UserPanelShell> {
   int _index = 0;
+  int _workspaceInitialTab = 0;
+  void _navigateFromDashboard(int target){setState((){if(target>=10){_workspaceInitialTab=target-10;_index=6;}else{_index=target;}});}
   bool _policyLoading = true;
   List<Map<String,dynamic>> _pendingPolicies = [];
   @override void initState(){super.initState();_checkPendingPolicies();}
@@ -32,13 +34,13 @@ class _UserPanelShellState extends State<UserPanelShell> {
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      UserDashboardScreen(apiClient: widget.apiClient, session: widget.session, onSignOut: widget.onSignOut, onNavigate: (index)=>setState(()=>_index=index)),
+      UserDashboardScreen(apiClient: widget.apiClient, session: widget.session, onSignOut: widget.onSignOut, onNavigate: _navigateFromDashboard),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.notifications),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.shortlist),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.blocked),
       UserToolsScreen(apiClient: widget.apiClient, kind: UserToolKind.reports),
       UserInterestsScreen(apiClient: widget.apiClient),
-      UserWorkspaceScreen(apiClient: widget.apiClient),
+      UserWorkspaceScreen(apiClient: widget.apiClient, initialTab: _workspaceInitialTab),
       UserAccountPrivacyScreen(apiClient: widget.apiClient, onSignOut: widget.onSignOut),
     ];
     return Scaffold(
