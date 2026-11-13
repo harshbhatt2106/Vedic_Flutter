@@ -105,8 +105,16 @@ class _WorkspaceTabState extends State<_WorkspaceTab> {
         final r=await widget.api.get('/user-profile',authenticated:true); final raw=r['data'];
         if(raw is Map){data=Map<String,dynamic>.from(raw);a.text=data['firstName']?.toString()??'';b.text=data['lastName']?.toString()??'';c.text=data['dateOfBirth']?.toString().split('T').first??'';d.text=data['gender']?.toString()??'';e.text=data['aboutMe']?.toString()??'';}
       } else if(widget.kind=='preferences'){
-        final r=await widget.api.get('/partner-preferences',authenticated:true); final raw=r['data'];
-        if(raw is Map){data=Map<String,dynamic>.from(raw);choice=data['preferredGender']?.toString()??choice;marital=data['maritalStatus']?.toString()??marital;final age=data['age'];if(age is Map){a.text=age['minAge']?.toString()??'';b.text=age['maxAge']?.toString()??'';}
+        final results=await Future.wait([
+          widget.api.get('/partner-preferences',authenticated:true),
+          widget.api.get('/user-profile',authenticated:true).catchError((_) => <String,dynamic>{'data':null}),
+        ]);
+        final raw=results[0]['data'],profile=results[1]['data'];
+        final ownGender=profile is Map?profile['gender']?.toString():'';
+        final opposite=ownGender=='Male'?'Female':ownGender=='Female'?'Male':'';
+        choice=raw is Map?(raw['preferredGender']?.toString()??opposite):opposite;
+        if(raw is Map){data=Map<String,dynamic>.from(raw);marital=data['maritalStatus']?.toString()??'';
+          final age=data['age'];if(age is Map){final min=(age['minAge'] as num?)?.toInt(),max=(age['maxAge'] as num?)?.toInt();a.text=min==21&&max==35?'':min?.toString()??'';b.text=min==21&&max==35?'':max?.toString()??'';}
           c.text=data['additionalRequirements']?.toString()??'';
           for(final group in ['height','community','career','location']){final value=data[group];if(value is Map){for(final entry in value.entries){if(prefFields.containsKey(entry.key))prefFields[entry.key]!.text=entry.value?.toString()??'';}}}final height=data['height'];if(height is Map){prefFields['minHeightFeet']!.text=height['minFeet']?.toString()??'';prefFields['minHeightInches']!.text=height['minInches']?.toString()??'';prefFields['maxHeightFeet']!.text=height['maxFeet']?.toString()??'';prefFields['maxHeightInches']!.text=height['maxInches']?.toString()??'';}await _loadPreferenceOptions();}
       } else if(widget.kind=='messages'){
