@@ -5,9 +5,10 @@ import '../../../../app/theme/app_theme.dart';
 import '../../../../core/api/api_client.dart';
 
 class UserInterestsScreen extends StatefulWidget {
-  const UserInterestsScreen({super.key, required this.apiClient, required this.onOpenChat});
+  const UserInterestsScreen({super.key, required this.apiClient, required this.onOpenChat, required this.onOpenMenu});
   final ApiClient apiClient;
   final VoidCallback onOpenChat;
+  final VoidCallback onOpenMenu;
 
   @override
   State<UserInterestsScreen> createState() => _UserInterestsScreenState();
@@ -113,6 +114,7 @@ class _UserInterestsScreenState extends State<UserInterestsScreen> with SingleTi
     return Scaffold(
       backgroundColor: AppPalette.background,
       appBar: AppBar(
+        leading: IconButton(tooltip: 'Open navigation menu', onPressed: widget.onOpenMenu, icon: const Icon(Icons.menu_rounded, color: AppPalette.maroon)),
         backgroundColor: AppPalette.background,
         title: const Text('Interests', style: TextStyle(color: AppPalette.darkMaroon)),
         bottom: TabBar(
