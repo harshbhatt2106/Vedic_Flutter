@@ -6,6 +6,7 @@ import '../dashboard/admin_dashboard_screen.dart';
 import '../pending_requests/pending_requests_screen.dart';
 import '../members/admin_members_screen.dart';
 import '../activities/admin_activity_log_screen.dart';
+import '../reports/admin_reports_screen.dart';
 
 class AdminShellScreen extends StatefulWidget {
   const AdminShellScreen({
@@ -135,6 +136,10 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
           ),
         'Activity Log' => AdminActivityLogScreen(
             key: const ValueKey('admin-activity-log'),
+            apiClient: widget.apiClient,
+          ),
+        'Reports' => AdminReportsScreen(
+            key: const ValueKey('admin-reports'),
             apiClient: widget.apiClient,
           ),
         _ => _ModuleNotImplementedScreen(module: _selected),
